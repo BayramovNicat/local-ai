@@ -91,6 +91,15 @@ export async function deleteChat(id: string): Promise<void> {
 
 // ── Embedding CRUD ─────────────────────────────────────────
 
+// In-memory cache — avoids repeated full-table reads
+let _embeddingsCache: EmbeddingRecord[] | null = null;
+let _embeddedMsgIds: Set<string> | null = null;
+
+function invalidateEmbeddingsCache() {
+  _embeddingsCache = null;
+  _embeddedMsgIds = null;
+}
+
 export async function saveEmbeddings(
   records: EmbeddingRecord[],
 ): Promise<void> {
@@ -102,17 +111,36 @@ export async function saveEmbeddings(
     for (const rec of records) {
       store.put(rec);
     }
-    tx.oncomplete = () => resolve();
+    tx.oncomplete = () => {
+      // Update cache incrementally instead of invalidating
+      if (_embeddingsCache) {
+        const newIds = new Set(records.map((r) => r.id));
+        _embeddingsCache = [
+          ..._embeddingsCache.filter((r) => !newIds.has(r.id)),
+          ...records,
+        ];
+      }
+      if (_embeddedMsgIds) {
+        for (const rec of records) {
+          if (rec.messageId) _embeddedMsgIds.add(rec.messageId);
+        }
+      }
+      resolve();
+    };
     tx.onerror = () => reject(tx.error);
   });
 }
 
 export async function loadAllEmbeddings(): Promise<EmbeddingRecord[]> {
+  if (_embeddingsCache) return _embeddingsCache;
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_EMBEDDINGS, "readonly");
     const req = tx.objectStore(STORE_EMBEDDINGS).getAll();
-    req.onsuccess = () => resolve(req.result ?? []);
+    req.onsuccess = () => {
+      _embeddingsCache = req.result ?? [];
+      resolve(_embeddingsCache);
+    };
     req.onerror = () => reject(req.error);
   });
 }
@@ -133,7 +161,10 @@ export async function deleteEmbeddingsByChatId(
         cursor.continue();
       }
     };
-    tx.oncomplete = () => resolve();
+    tx.oncomplete = () => {
+      invalidateEmbeddingsCache();
+      resolve();
+    };
     tx.onerror = () => reject(tx.error);
   });
 }
@@ -154,21 +185,22 @@ export async function deleteEmbeddingsByDocumentId(
         cursor.continue();
       }
     };
-    tx.oncomplete = () => resolve();
+    tx.oncomplete = () => {
+      invalidateEmbeddingsCache();
+      resolve();
+    };
     tx.onerror = () => reject(tx.error);
   });
 }
 
 export async function getEmbeddedMessageIds(): Promise<Set<string>> {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE_EMBEDDINGS, "readonly");
-    const store = tx.objectStore(STORE_EMBEDDINGS);
-    const index = store.index("messageId");
-    const req = index.getAllKeys();
-    req.onsuccess = () => resolve(new Set(req.result as string[]));
-    req.onerror = () => reject(req.error);
-  });
+  if (_embeddedMsgIds) return _embeddedMsgIds;
+  const all = await loadAllEmbeddings();
+  _embeddedMsgIds = new Set<string>();
+  for (const rec of all) {
+    if (rec.messageId) _embeddedMsgIds.add(rec.messageId);
+  }
+  return _embeddedMsgIds;
 }
 
 // ── Document CRUD ──────────────────────────────────────────

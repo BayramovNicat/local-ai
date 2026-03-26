@@ -100,8 +100,12 @@ export default function Home() {
   }, [activeChatId, loadDocuments]);
 
   // Auto-embed messages after streaming completes
+  const lastEmbedRef = useRef({ chatId: "", count: 0 });
   useEffect(() => {
     if (!isStreaming && messages.length > 0 && activeChatId) {
+      const last = lastEmbedRef.current;
+      if (last.chatId === activeChatId && last.count === messages.length) return;
+      lastEmbedRef.current = { chatId: activeChatId, count: messages.length };
       embedMessages(messages, activeChatId);
     }
     // Only run when streaming stops
