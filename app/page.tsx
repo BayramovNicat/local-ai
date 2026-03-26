@@ -2,10 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import type { Message, Attachment, ChatSession } from "@/app/types";
-import {
-  ACCENT_PRESETS,
-  AVAILABLE_MODELS,
-} from "@/app/data/constants";
+import { ACCENT_PRESETS, AVAILABLE_MODELS } from "@/app/data/constants";
 import { Sidebar } from "@/app/components/sidebar/sidebar";
 import { Header } from "@/app/components/header/header";
 import { ChatMessage } from "@/app/components/chat/chat-message";
@@ -14,13 +11,13 @@ import { MessageInput } from "@/app/components/chat/message-input";
 import { DownloadOverlay } from "@/app/components/chat/download-overlay";
 import { CreateMLCEngine, MLCEngine, hasModelInCache } from "@mlc-ai/web-llm";
 
-// Native IndexedDB wrappers to replace idb-keyval
 function saveToDB(key: string, value: unknown): Promise<void> {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open("keyval-store");
     request.onupgradeneeded = (e) => {
       const db = (e.target as IDBOpenDBRequest).result;
-      if (!db.objectStoreNames.contains("keyval")) db.createObjectStore("keyval");
+      if (!db.objectStoreNames.contains("keyval"))
+        db.createObjectStore("keyval");
     };
     request.onsuccess = (e) => {
       const db = (e.target as IDBOpenDBRequest).result;
@@ -34,7 +31,7 @@ function saveToDB(key: string, value: unknown): Promise<void> {
         reject(err);
       }
     };
-    request.onerror = () => reject(request.error); 
+    request.onerror = () => reject(request.error);
   });
 }
 
@@ -43,7 +40,8 @@ function loadFromDB<T>(key: string): Promise<T | undefined> {
     const request = indexedDB.open("keyval-store");
     request.onupgradeneeded = (e) => {
       const db = (e.target as IDBOpenDBRequest).result;
-      if (!db.objectStoreNames.contains("keyval")) db.createObjectStore("keyval");
+      if (!db.objectStoreNames.contains("keyval"))
+        db.createObjectStore("keyval");
     };
     request.onsuccess = (e) => {
       const db = (e.target as IDBOpenDBRequest).result;
@@ -78,6 +76,7 @@ export default function Home() {
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [isHistoryLoaded, setIsHistoryLoaded] = useState(false);
   const [isClientLoaded, setIsClientLoaded] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
   const [accentColor, setAccentColor] = useState(ACCENT_PRESETS[0].hex);
   const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
@@ -91,7 +90,7 @@ export default function Home() {
       setIsDownloading(true);
       setDownloadProgress(0);
       setDownloadProgressText("Initializing engine...");
-      
+
       try {
         const cached = await hasModelInCache(selectedModel);
         if (active) setIsCached(cached);
@@ -102,9 +101,9 @@ export default function Home() {
               setDownloadProgress(Math.round(report.progress * 100));
               setDownloadProgressText(report.text);
             }
-          }
+          },
         });
-        
+
         if (active) {
           engineRef.current = engine;
           setIsDownloading(false);
@@ -132,14 +131,14 @@ export default function Home() {
     if (activeChatId && messages.length > 0) {
       setHistory((prev) =>
         prev.map((session) =>
-          session.id === activeChatId ? { ...session, messages } : session
-        )
+          session.id === activeChatId ? { ...session, messages } : session,
+        ),
       );
     }
   }, [messages, activeChatId]);
 
   useEffect(() => {
-    loadFromDB<ChatSession[]>('chat-history')
+    loadFromDB<ChatSession[]>("chat-history")
       .then((val) => {
         if (val && Array.isArray(val) && val.length > 0) {
           setHistory(val);
@@ -153,10 +152,12 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    if (isHistoryLoaded) {
-      saveToDB('chat-history', history).catch(err => console.error("Failed to save history:", err));
+    if (isHistoryLoaded && !isStreaming) {
+      saveToDB("chat-history", history).catch((err) =>
+        console.error("Failed to save history:", err),
+      );
     }
-  }, [history, isHistoryLoaded]);
+  }, [history, isHistoryLoaded, isStreaming]);
 
   // Load preferences from localStorage on mount
   useEffect(() => {
@@ -233,6 +234,8 @@ export default function Home() {
 
     setMessages((prev) => [...prev, initAssistantMsg]);
 
+    setIsStreaming(true);
+
     try {
       const engineMsgs = messages.concat(userMsg).map((m) => ({
         role: m.role,
@@ -249,40 +252,52 @@ export default function Home() {
         currentText += chunk.choices[0]?.delta.content || "";
         setMessages((prev) =>
           prev.map((m) =>
-            m.id === assistantId ? { ...m, content: currentText } : m
-          )
+            m.id === assistantId ? { ...m, content: currentText } : m,
+          ),
         );
       }
 
       if (isFirstMessage) {
         try {
-          const titleResponse = await engineRef.current.chat.completions.create({
-            messages: [
-              { role: "user", content: text },
-              { role: "assistant", content: currentText },
-              { role: "user", content: "Generate a short 2-5 word title summarizing this conversation. Reply ONLY with the title itself. No quotation marks, no punctuation, no prefix." }
-            ],
-            stream: false,
-          });
-          
-          let generatedTitle = titleResponse.choices[0]?.message.content?.trim() || "New Chat";
-          generatedTitle = generatedTitle.replace(/^["']|["']$/g, ''); // Remove quotes if LLM added them
-          
-          setHistory((prev) => 
-            prev.map(s => s.id === currentChatId ? { ...s, title: generatedTitle } : s)
+          const titleResponse = await engineRef.current.chat.completions.create(
+            {
+              messages: [
+                { role: "user", content: text },
+                { role: "assistant", content: currentText },
+                {
+                  role: "user",
+                  content:
+                    "Generate a short 2-5 word title summarizing this conversation. Reply ONLY with the title itself. No quotation marks, no punctuation, no prefix.",
+                },
+              ],
+              stream: false,
+            },
+          );
+
+          let generatedTitle =
+            titleResponse.choices[0]?.message.content?.trim() || "New Chat";
+          generatedTitle = generatedTitle.replace(/^["']|["']$/g, ""); // Remove quotes if LLM added them
+
+          setHistory((prev) =>
+            prev.map((s) =>
+              s.id === currentChatId ? { ...s, title: generatedTitle } : s,
+            ),
           );
         } catch (titleErr) {
           console.error("Title generation failed:", titleErr);
         }
       }
-
     } catch (err) {
       console.error(err);
       setMessages((prev) =>
         prev.map((m) =>
-          m.id === assistantId ? { ...m, content: "Error generating response." } : m
-        )
+          m.id === assistantId
+            ? { ...m, content: "Error generating response." }
+            : m,
+        ),
       );
+    } finally {
+      setIsStreaming(false);
     }
   }
 
