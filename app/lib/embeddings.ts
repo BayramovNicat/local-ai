@@ -33,27 +33,35 @@ export function searchEmbeddings(
       const session = chatMap.get(rec.chatId);
       if (!session) return null;
 
-      const msg = session.messages.find((m) => m.id === rec.messageId);
+      const isDocument = !!rec.documentId;
+      const msg = isDocument
+        ? undefined
+        : session.messages.find((m) => m.id === rec.messageId);
 
       return {
         chatId: rec.chatId,
         chatTitle: session.title,
         messageId: rec.messageId,
+        ...(rec.documentId && { documentId: rec.documentId }),
         text: rec.text,
         score: cosineSimilarity(queryVector, rec.vector),
-        role: (msg?.role ?? "user") as "user" | "assistant",
+        role: (isDocument ? "document" : msg?.role ?? "user") as
+          | "user"
+          | "assistant"
+          | "document",
       };
     })
     .filter((r): r is SearchResult => r !== null);
 
   scored.sort((a, b) => b.score - a.score);
 
-  // De-duplicate: keep only the best result per message
+  // De-duplicate: best result per message, or per document chunk id
   const seen = new Set<string>();
   const deduped: SearchResult[] = [];
   for (const r of scored) {
-    if (!seen.has(r.messageId)) {
-      seen.add(r.messageId);
+    const dedupKey = r.documentId || r.messageId;
+    if (!seen.has(dedupKey)) {
+      seen.add(dedupKey);
       deduped.push(r);
     }
     if (deduped.length >= topK) break;

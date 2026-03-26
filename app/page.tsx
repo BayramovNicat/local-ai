@@ -41,6 +41,7 @@ export default function Home() {
     isSearching,
     initEmbeddingEngine,
     getEmbeddingEngine,
+    getEmbeddingEngineIfReady,
     embedMessages,
     search,
     cleanupEmbeddings,
@@ -54,7 +55,7 @@ export default function Home() {
     getContext,
     removeDocument,
     cleanupDocuments,
-  } = useRag(getEmbeddingEngine, initEmbeddingEngine);
+  } = useRag(getEmbeddingEngine, getEmbeddingEngineIfReady, initEmbeddingEngine);
 
   const {
     messages,

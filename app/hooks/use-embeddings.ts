@@ -73,6 +73,13 @@ export function useEmbeddings() {
   }, []);
 
   /**
+   * Returns the engine if already loaded, or null. Never triggers download.
+   */
+  const getEmbeddingEngineIfReady = useCallback((): MLCEngineInterface | null => {
+    return embeddingEngineRef.current;
+  }, []);
+
+  /**
    * Trigger engine loading — call when search modal opens.
    */
   const initEmbeddingEngine = useCallback(() => {
@@ -187,6 +194,7 @@ export function useEmbeddings() {
     isSearching,
     initEmbeddingEngine,
     getEmbeddingEngine,
+    getEmbeddingEngineIfReady,
     embedMessages,
     search,
     cleanupEmbeddings,

@@ -37,9 +37,10 @@ export interface SearchResult {
   chatId: string;
   chatTitle: string;
   messageId: string;
+  documentId?: string;
   text: string;
   score: number;
-  role: "user" | "assistant";
+  role: "user" | "assistant" | "document";
 }
 
 export interface Document {

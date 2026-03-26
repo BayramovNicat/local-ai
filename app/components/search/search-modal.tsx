@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Search, X, MessageSquare, User, Bot, Loader2 } from "lucide-react";
+import { Search, X, MessageSquare, User, Bot, FileText, Loader2 } from "lucide-react";
 import type { SearchResult } from "@/app/types";
 
 export function SearchModal({
@@ -218,7 +218,9 @@ export function SearchModal({
                   {result.chatTitle}
                 </span>
                 <div className="flex items-center gap-2 text-neutral-500">
-                  {result.role === "user" ? (
+                  {result.role === "document" ? (
+                    <FileText size={11} />
+                  ) : result.role === "user" ? (
                     <User size={11} />
                   ) : (
                     <Bot size={11} />

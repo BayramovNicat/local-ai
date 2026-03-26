@@ -18,6 +18,7 @@ import type { MLCEngineInterface } from "@mlc-ai/web-llm";
 
 export function useRag(
   getEmbeddingEngine: () => Promise<MLCEngineInterface>,
+  getEmbeddingEngineIfReady: () => MLCEngineInterface | null,
   initEmbeddingEngine: () => void,
 ) {
   const [documents, setDocuments] = useState<DocType[]>([]);
@@ -123,8 +124,11 @@ export function useRag(
       chatId: string,
       history: ChatSession[],
     ): Promise<{ docContext: string; convContext: string }> => {
+      const empty = { docContext: "", convContext: "" };
       try {
-        const engine = await getEmbeddingEngine();
+        // Skip if embedding engine isn't loaded yet — don't block the first message
+        const engine = getEmbeddingEngineIfReady();
+        if (!engine) return empty;
         const response = await engine.embeddings.create({
           input: [query],
           model: EMBEDDING_MODEL,
@@ -182,7 +186,7 @@ export function useRag(
         return { docContext: "", convContext: "" };
       }
     },
-    [getEmbeddingEngine],
+    [getEmbeddingEngineIfReady],
   );
 
   /**
