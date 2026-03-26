@@ -10,7 +10,7 @@ import { Header } from "@/app/components/header/header";
 import { ChatMessage } from "@/app/components/chat/chat-message";
 import { EmptyState } from "@/app/components/chat/empty-state";
 import { MessageInput } from "@/app/components/chat/message-input";
-import { DownloadOverlay } from "@/app/components/chat/download-overlay";
+import { LoadingBanner } from "@/app/components/chat/loading-banner";
 
 export default function Home() {
   const {
@@ -22,7 +22,7 @@ export default function Home() {
     setIsSidebarOpen,
   } = usePreferences();
 
-  const { engineRef, isDownloading, isCached, downloadProgress, downloadProgressText } =
+  const { waitForEngine, isLoading, isCached, downloadProgress, downloadProgressText } =
     useEngine(selectedModel);
 
   const {
@@ -39,7 +39,7 @@ export default function Home() {
     selectChat,
     deleteChat,
     editMessage,
-  } = useChat(engineRef);
+  } = useChat(waitForEngine);
 
   const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
   const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
@@ -52,79 +52,76 @@ export default function Home() {
   }
 
   return (
-    <>
-      {isDownloading && (
-        <DownloadOverlay
-          modelName={selectedModel}
-          progress={downloadProgress}
-          progressText={downloadProgressText}
-          isCached={isCached}
+    <div
+      className="flex h-screen overflow-hidden bg-[#0a0a0a]"
+      style={{ "--accent": accentColor } as React.CSSProperties}
+    >
+      <Sidebar
+        isOpen={isSidebarOpen}
+        accent={accentColor}
+        history={history}
+        activeChatId={activeChatId}
+        onNewChat={newChat}
+        onSelectChat={selectChat}
+        onDeleteChat={deleteChat}
+        onClose={() => setIsSidebarOpen(false)}
+      />
+
+      <div className="flex-1 relative min-w-0">
+        <Header
           accent={accentColor}
+          isSidebarOpen={isSidebarOpen}
+          onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+          isColorPickerOpen={isColorPickerOpen}
+          onToggleColorPicker={() => setIsColorPickerOpen(!isColorPickerOpen)}
+          onSelectColor={(hex) => {
+            setAccentColor(hex);
+            setIsColorPickerOpen(false);
+          }}
+          accentPresets={ACCENT_PRESETS}
+          isModelDropdownOpen={isModelDropdownOpen}
+          onToggleModelDropdown={() =>
+            setIsModelDropdownOpen(!isModelDropdownOpen)
+          }
+          models={AVAILABLE_MODELS}
+          selectedModel={selectedModel}
+          onSelectModel={handleModelSelect}
         />
-      )}
 
-      <div
-        className="flex h-screen overflow-hidden bg-[#0a0a0a]"
-        style={{ "--accent": accentColor } as React.CSSProperties}
-      >
-        <Sidebar
-          isOpen={isSidebarOpen}
+        <main className="absolute inset-0 overflow-y-auto px-3 sm:px-4 md:px-6 pt-16 pb-28 space-y-6">
+          {isLoading && (
+            <LoadingBanner
+              modelName={selectedModel}
+              progress={downloadProgress}
+              progressText={downloadProgressText}
+              isCached={isCached}
+              accent={accentColor}
+            />
+          )}
+          {messages.length === 0 && !isLoading ? (
+            <EmptyState accent={accentColor} />
+          ) : (
+            messages.map((msg) => (
+              <ChatMessage
+                key={msg.id}
+                message={msg}
+                accent={accentColor}
+                onEdit={editMessage}
+              />
+            ))
+          )}
+          <div ref={messagesEndRef} />
+        </main>
+
+        <MessageInput
+          input={input}
+          setInput={setInput}
+          attachments={attachments}
+          setAttachments={setAttachments}
           accent={accentColor}
-          history={history}
-          activeChatId={activeChatId}
-          onNewChat={newChat}
-          onSelectChat={selectChat}
-          onDeleteChat={deleteChat}
-          onClose={() => setIsSidebarOpen(false)}
+          onSend={handleSend}
         />
-
-        <div className="flex-1 relative min-w-0">
-          <Header
-            accent={accentColor}
-            isSidebarOpen={isSidebarOpen}
-            onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
-            isColorPickerOpen={isColorPickerOpen}
-            onToggleColorPicker={() => setIsColorPickerOpen(!isColorPickerOpen)}
-            onSelectColor={(hex) => {
-              setAccentColor(hex);
-              setIsColorPickerOpen(false);
-            }}
-            accentPresets={ACCENT_PRESETS}
-            isModelDropdownOpen={isModelDropdownOpen}
-            onToggleModelDropdown={() =>
-              setIsModelDropdownOpen(!isModelDropdownOpen)
-            }
-            models={AVAILABLE_MODELS}
-            selectedModel={selectedModel}
-            onSelectModel={handleModelSelect}
-          />
-
-          <main className="absolute inset-0 overflow-y-auto px-3 sm:px-4 md:px-6 pt-16 pb-28 space-y-6">
-            {messages.length === 0 ? (
-              <EmptyState accent={accentColor} />
-            ) : (
-              messages.map((msg) => (
-                <ChatMessage
-                  key={msg.id}
-                  message={msg}
-                  accent={accentColor}
-                  onEdit={editMessage}
-                />
-              ))
-            )}
-            <div ref={messagesEndRef} />
-          </main>
-
-          <MessageInput
-            input={input}
-            setInput={setInput}
-            attachments={attachments}
-            setAttachments={setAttachments}
-            accent={accentColor}
-            onSend={handleSend}
-          />
-        </div>
       </div>
-    </>
+    </div>
   );
 }

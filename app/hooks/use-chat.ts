@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback, type MutableRefObject } from "react";
-import type { Message, Attachment, ChatSession } from "@/app/types";
-import { saveToDB, loadFromDB } from "@/app/lib/db";
-import type { MLCEngine } from "@mlc-ai/web-llm";
+import { loadFromDB, saveToDB } from "@/app/lib/db";
+import type { Attachment, ChatSession, Message } from "@/app/types";
+import type { MLCEngineInterface } from "@mlc-ai/web-llm";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 const HISTORY_DB_KEY = "chat-history";
 
-export function useChat(engineRef: MutableRefObject<MLCEngine | null>) {
+export function useChat(waitForEngine: () => Promise<MLCEngineInterface>) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [attachments, setAttachments] = useState<Attachment[]>([]);
@@ -32,9 +32,7 @@ export function useChat(engineRef: MutableRefObject<MLCEngine | null>) {
     const msgs = messagesRef.current;
     if (chatId && msgs.length > 0) {
       setHistory((prev) =>
-        prev.map((s) =>
-          s.id === chatId ? { ...s, messages: msgs } : s,
-        ),
+        prev.map((s) => (s.id === chatId ? { ...s, messages: msgs } : s)),
       );
     }
   }, []);
@@ -91,8 +89,6 @@ export function useChat(engineRef: MutableRefObject<MLCEngine | null>) {
     setInput("");
     setAttachments([]);
 
-    if (!engineRef.current) return;
-
     const assistantId = (Date.now() + 1).toString();
     setMessages((prev) => [
       ...prev,
@@ -102,12 +98,14 @@ export function useChat(engineRef: MutableRefObject<MLCEngine | null>) {
     setIsStreaming(true);
 
     try {
+      const engine = await waitForEngine();
+
       const engineMsgs = messages.concat(userMsg).map((m) => ({
         role: m.role,
         content: m.content,
       }));
 
-      const chunks = await engineRef.current.chat.completions.create({
+      const chunks = await engine.chat.completions.create({
         messages: engineMsgs,
         stream: true,
       });
@@ -122,21 +120,20 @@ export function useChat(engineRef: MutableRefObject<MLCEngine | null>) {
         );
       }
 
-      if (isFirstMessage && engineRef.current) {
+      if (isFirstMessage) {
         try {
-          const titleResponse =
-            await engineRef.current.chat.completions.create({
-              messages: [
-                { role: "user", content: text },
-                { role: "assistant", content: currentText },
-                {
-                  role: "user",
-                  content:
-                    "Generate a short 2-5 word title summarizing this conversation. Reply ONLY with the title itself. No quotation marks, no punctuation, no prefix.",
-                },
-              ],
-              stream: false,
-            });
+          const titleResponse = await engine.chat.completions.create({
+            messages: [
+              { role: "user", content: text },
+              { role: "assistant", content: currentText },
+              {
+                role: "user",
+                content:
+                  "Generate a short 2-5 word title summarizing this conversation. Reply ONLY with the title itself. No quotation marks, no punctuation, no prefix.",
+              },
+            ],
+            stream: false,
+          });
 
           let generatedTitle =
             titleResponse.choices[0]?.message.content?.trim() || "New Chat";
@@ -164,7 +161,14 @@ export function useChat(engineRef: MutableRefObject<MLCEngine | null>) {
       setIsStreaming(false);
       syncHistoryWithMessages();
     }
-  }, [input, attachments, messages, activeChatId, engineRef, syncHistoryWithMessages]);
+  }, [
+    input,
+    attachments,
+    messages,
+    activeChatId,
+    waitForEngine,
+    syncHistoryWithMessages,
+  ]);
 
   const newChat = useCallback(() => {
     setMessages([]);
