@@ -60,7 +60,7 @@ export default function Home() {
     setAttachments,
     history,
     activeChatId,
-    messagesEndRef,
+    scrollContainerRef,
     handleSend,
     newChat,
     selectChat,
@@ -212,7 +212,10 @@ export default function Home() {
           onSelectModel={handleModelSelect}
         />
 
-        <main className="absolute inset-0 overflow-y-auto px-3 sm:px-4 md:px-6 pt-16 pb-28 space-y-6">
+        <main 
+          ref={scrollContainerRef as React.RefObject<HTMLElement>}
+          className="absolute inset-0 overflow-y-auto px-3 sm:px-4 md:px-6 pt-16 pb-28 space-y-6"
+        >
           {isLoading && (
             <LoadingBanner
               modelName={selectedModel}
@@ -234,7 +237,6 @@ export default function Home() {
               />
             ))
           )}
-          <div ref={messagesEndRef} />
         </main>
 
         <div className="absolute bottom-0 left-0 right-0 z-10">

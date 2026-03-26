@@ -24,83 +24,111 @@ export function useChat(
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [isStreaming, setIsStreaming] = useState(false);
   const [isHistoryLoaded, setIsHistoryLoaded] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLElement>(null);
   const messagesRef = useRef(messages);
   messagesRef.current = messages;
   const activeChatIdRef = useRef(activeChatId);
   activeChatIdRef.current = activeChatId;
+  const prevChatIdRef = useRef<string | null>(null);
+  const isAtBottomRef = useRef(true);
+  const isInteractingRef = useRef(false);
+  const interactionTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const forceScrollRef = useRef(false);
 
-  // Auto-scroll on new messages
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    const container = scrollContainerRef.current;
+    if (!container) return;
 
-  // Persist a single chat session to IndexedDB
-  const persistChat = useCallback((chatId: string, msgs: Message[]) => {
-    setHistory((prev) => {
-      const session = prev.find((s) => s.id === chatId);
-      if (session) {
-        const updated = { ...session, messages: msgs };
-        saveChatToDB(updated).catch((err) =>
-          console.error("Failed to save chat:", err),
-        );
-      }
-      return prev;
-    });
+    const handleScroll = () => {
+      isAtBottomRef.current = 
+        container.scrollHeight - container.scrollTop - container.clientHeight < 50;
+    };
+
+    const handleInteraction = () => {
+      isInteractingRef.current = true;
+      if (interactionTimerRef.current) clearTimeout(interactionTimerRef.current);
+      interactionTimerRef.current = setTimeout(() => {
+        isInteractingRef.current = false;
+      }, 500);
+    };
+
+    container.addEventListener("scroll", handleScroll, { passive: true });
+    container.addEventListener("wheel", handleInteraction, { passive: true });
+    container.addEventListener("touchstart", handleInteraction, { passive: true });
+
+    return () => {
+      container.removeEventListener("scroll", handleScroll);
+      container.removeEventListener("wheel", handleInteraction);
+      container.removeEventListener("touchstart", handleInteraction);
+      if (interactionTimerRef.current) clearTimeout(interactionTimerRef.current);
+    };
   }, []);
 
-  // Sync messages to history whenever messages change
-  const syncHistoryWithMessages = useCallback(() => {
-    const chatId = activeChatIdRef.current;
-    const msgs = messagesRef.current;
-    if (chatId && msgs.length > 0) {
-      setHistory((prev) =>
-        prev.map((s) => (s.id === chatId ? { ...s, messages: msgs } : s)),
-      );
-      persistChat(chatId, msgs);
-    }
-  }, [persistChat]);
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container || messages.length === 0) return;
 
-  // Load history from IndexedDB
+    const isChatSwitched = activeChatId !== prevChatIdRef.current;
+    const shouldAutoScroll = isChatSwitched || forceScrollRef.current || (isAtBottomRef.current && !isInteractingRef.current);
+
+    if (shouldAutoScroll) {
+      setTimeout(() => {
+        container.scrollTo({
+          top: container.scrollHeight,
+          behavior: isChatSwitched ? ("instant" as ScrollBehavior) : "smooth",
+        });
+        if (isAtBottomRef.current || isChatSwitched || forceScrollRef.current) 
+          forceScrollRef.current = false;
+      }, 0);
+    }
+    prevChatIdRef.current = activeChatId;
+  }, [messages, activeChatId]);
+
+  const updateHistory = useCallback(
+    (chatId: string, msgs: Message[], title?: string) => {
+      setHistory((prev) => {
+        const updated = prev.map((s) =>
+          s.id === chatId
+            ? { ...s, messages: msgs, ...(title && { title }) }
+            : s,
+        );
+        const session = updated.find((s) => s.id === chatId);
+        if (session) saveChatToDB(session).catch(console.error);
+        return updated;
+      });
+    },
+    [],
+  );
+
   useEffect(() => {
     loadAllChats()
       .then((chats) => {
         if (chats.length > 0) {
-          // Sort by id (timestamp) descending so newest first
           chats.sort((a, b) => (b.id > a.id ? 1 : -1));
           setHistory(chats);
         }
         setIsHistoryLoaded(true);
       })
       .catch((err) => {
-        console.error("Failed to load history:", err);
+        console.error(err);
         setIsHistoryLoaded(true);
       });
   }, []);
 
   const createChat = useCallback(async (title?: string) => {
     const id = Date.now().toString();
-    const chatTitle = title
-      ? title.length > 20
-        ? title.slice(0, 20) + "..."
-        : title
-      : "New Chat";
-
     const newSession: ChatSession = {
       id,
-      title: chatTitle,
+      title: title
+        ? title.length > 20
+          ? title.slice(0, 20) + "..."
+          : title
+        : "New Chat",
       messages: [],
     };
-
     setHistory((prev) => [newSession, ...prev]);
     setActiveChatId(id);
-
-    try {
-      await saveChatToDB(newSession);
-    } catch (err) {
-      console.error("Failed to save new chat:", err);
-    }
-
+    await saveChatToDB(newSession).catch(console.error);
     return id;
   }, []);
 
@@ -109,11 +137,10 @@ export function useChat(
     if (!text && attachments.length === 0) return;
 
     const isFirstMessage = messages.length === 0;
+    forceScrollRef.current = true;
 
     let currentChatId = activeChatId;
-    if (!currentChatId) {
-      currentChatId = await createChat(text);
-    }
+    if (!currentChatId) currentChatId = await createChat(text);
 
     const userMsg: Message = {
       id: Date.now().toString(),
@@ -122,63 +149,50 @@ export function useChat(
       attachments: attachments.length > 0 ? [...attachments] : undefined,
     };
 
-    setMessages((prev) => [...prev, userMsg]);
+    const assistantId = (Date.now() + 1).toString();
+    const assistantMsg: Message = {
+      id: assistantId,
+      role: "assistant",
+      content: "",
+    };
+
+    setMessages((prev) => [...prev, userMsg, assistantMsg]);
     setInput("");
     setAttachments([]);
-
-    const assistantId = (Date.now() + 1).toString();
-    setMessages((prev) => [
-      ...prev,
-      { id: assistantId, role: "assistant", content: "" },
-    ]);
-
     setIsStreaming(true);
 
     try {
       const engine = await waitForEngine();
-
-      // Retrieve RAG context if documents are attached
-      let docContext = "";
-      let convContext = "";
+      let docContext = "",
+        convContext = "";
       if (getContext && currentChatId) {
         const result = await getContext(text, currentChatId, history);
         docContext = result.docContext;
         convContext = result.convContext;
       }
 
-      const engineMsgs: Array<{
-        role: "system" | "user" | "assistant";
-        content: string;
-      }> = [];
+      let systemPrompt = "";
+      if (docContext) systemPrompt += `### DOCUMENT CONTEXT\n${docContext}\n\n`;
+      if (convContext)
+        systemPrompt += `### PAST CONVERSATION MEMORIES\n${convContext}\n\n`;
 
-      // Inject RAG context as system message
-      if (docContext) {
+      const engineMsgs = [];
+      if (systemPrompt) {
         engineMsgs.push({
           role: "system" as const,
-          content: `The following document context may be relevant to the user's request. Use it if applicable:\n\n${docContext}`,
+          content: `Use this context for a better response:\n\n${systemPrompt.trim()}`,
         });
       }
-
-      // Inject Conversation context as system message
-      if (convContext) {
-        engineMsgs.push({
-          role: "system" as const,
-          content: `The following context from past conversations may be relevant. Use it if it helps answer the query:\n\n${convContext}`,
-        });
-      }
-
       engineMsgs.push(
-        ...messages.concat(userMsg).map((m) => ({
-          role: m.role as "user" | "assistant",
-          content: m.content,
-        })),
+        ...messages
+          .concat(userMsg)
+          .map((m) => ({ role: m.role, content: m.content })),
       );
 
       const chunks = await engine.chat.completions.create({
         messages: engineMsgs,
         stream: true,
       });
-
       let currentText = "";
       for await (const chunk of chunks) {
         currentText += chunk.choices[0]?.delta.content || "";
@@ -191,52 +205,42 @@ export function useChat(
 
       if (isFirstMessage) {
         try {
-          const titleResponse = await engine.chat.completions.create({
+          const res = await engine.chat.completions.create({
             messages: [
               {
                 role: "system",
                 content:
-                  "You are a helpful assistant that generates short, concise titles for chat conversations.",
+                  "Generate a 2-5 word concise title for this chat. Output ONLY the title.",
               },
               { role: "user", content: text },
               { role: "assistant", content: currentText },
-              {
-                role: "user",
-                content:
-                  "Generate a 2-5 word title for this conversation. Output ONLY the title, no extra words, symbols, or phrases like 'Title:' or 'The title is:'. Avoid generic terms like 'AI Assistant' or 'Helpful Chat'.",
-              },
             ],
             stream: false,
           });
-
-          let generatedTitle =
-            titleResponse.choices[0]?.message.content?.trim() || "";
-
-          // Filter out generic AI-generated filler titles
-          const genericTerms = ["ai assistant", "helpful assistant", "untitled chat", "chat with ai", "the title is"];
-          const lowerTitle = generatedTitle.toLowerCase();
-          const isGeneric = !generatedTitle || genericTerms.some(term => lowerTitle.includes(term)) || generatedTitle.length > 50;
-
-          if (isGeneric) {
-            generatedTitle = text.length > 25 ? text.slice(0, 25) + "..." : text;
+          let title = res.choices[0]?.message.content?.trim() || "";
+          const generic = [
+            "ai assistant",
+            "helpful assistant",
+            "untitled",
+            "chat with ai",
+          ];
+          if (
+            !title ||
+            generic.some((g) => title.toLowerCase().includes(g)) ||
+            title.length > 50
+          ) {
+            title = text.length > 25 ? text.slice(0, 25) + "..." : text;
           }
-
-          generatedTitle = generatedTitle.replace(/^["']|["']$/g, "");
-
-          setHistory((prev) => {
-            const updated = prev.map((s) =>
-              s.id === currentChatId ? { ...s, title: generatedTitle } : s,
-            );
-            const session = updated.find((s) => s.id === currentChatId);
-            if (session) {
-              saveChatToDB(session).catch((err) =>
-                console.error("Failed to save title:", err),
-              );
-            }
-            return updated;
-          });
-        } catch (titleErr) {
-          console.error("Title generation failed:", titleErr);
+          updateHistory(
+            currentChatId,
+            messagesRef.current.concat(userMsg, {
+              ...assistantMsg,
+              content: currentText,
+            }),
+            title.replace(/^["']|["']$/g, ""),
+          );
+        } catch (e) {
+          console.error(e);
         }
       }
     } catch (err) {
@@ -250,7 +254,7 @@ export function useChat(
       );
     } finally {
       setIsStreaming(false);
-      syncHistoryWithMessages();
+      updateHistory(currentChatId!, messagesRef.current);
     }
   }, [
     input,
@@ -261,7 +265,7 @@ export function useChat(
     getContext,
     history,
     createChat,
-    syncHistoryWithMessages,
+    updateHistory,
   ]);
 
   const stopGenerating = useCallback(async () => {
@@ -269,7 +273,7 @@ export function useChat(
       const engine = await waitForEngine();
       engine.interruptGenerate();
     } catch (err) {
-      console.error("Failed to stop generation:", err);
+      console.error(err);
     }
   }, [waitForEngine]);
 
@@ -293,9 +297,7 @@ export function useChat(
   const deleteChat = useCallback(
     (id: string) => {
       setHistory((prev) => prev.filter((s) => s.id !== id));
-      deleteChatFromDB(id).catch((err) =>
-        console.error("Failed to delete chat:", err),
-      );
+      deleteChatFromDB(id).catch(console.error);
       if (activeChatId === id) {
         setMessages([]);
         setActiveChatId(null);
@@ -320,7 +322,7 @@ export function useChat(
     setAttachments,
     history,
     activeChatId,
-    messagesEndRef,
+    scrollContainerRef,
     handleSend,
     newChat,
     createChat,
