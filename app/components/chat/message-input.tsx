@@ -2,7 +2,8 @@
 
 import { useRef } from "react";
 import { Send, Paperclip, X, Square } from "lucide-react";
-import type { Attachment } from "@/app/types";
+import { DocumentPanel } from "./document-panel";
+import type { Attachment, Document } from "@/app/types";
 import { SUPPORTED_DOC_TYPES } from "@/app/data/constants";
 
 export function MessageInput({
@@ -15,6 +16,9 @@ export function MessageInput({
   onSend,
   onStop,
   onUpload,
+  documents,
+  isUploading,
+  onRemoveDocument,
 }: {
   input: string;
   setInput: (v: string) => void;
@@ -25,6 +29,9 @@ export function MessageInput({
   onSend: () => void;
   onStop: () => void;
   onUpload: (files: File[]) => void;
+  documents: Document[];
+  isUploading: boolean;
+  onRemoveDocument: (docId: string) => void;
 }) {
   const editorRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -34,9 +41,15 @@ export function MessageInput({
     <div className="p-3 sm:p-4 bg-[#0a0a0a]/40 backdrop-blur-md">
       <div className="max-w-4xl mx-auto">
         <div
-          className="rounded-xl border border-neutral-700 transition-colors"
+          className="rounded-xl border border-neutral-700 transition-colors bg-[#0a0a0a]"
           style={{ borderColor: hasContent ? `${accent}4D` : undefined }}
         >
+          <DocumentPanel
+            documents={documents}
+            isUploading={isUploading}
+            accent={accent}
+            onRemove={onRemoveDocument}
+          />
           {attachments.length > 0 && (
             <div className="flex flex-wrap gap-2 px-3 pt-3">
               {attachments.map((att) => (

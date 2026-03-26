@@ -14,7 +14,6 @@ import { EmptyState } from "@/app/components/chat/empty-state";
 import { MessageInput } from "@/app/components/chat/message-input";
 import { LoadingBanner } from "@/app/components/chat/loading-banner";
 import { SearchModal } from "@/app/components/search/search-modal";
-import { DocumentPanel } from "@/app/components/chat/document-panel";
 import { processFiles } from "@/app/hooks/use-file-handler";
 import { SUPPORTED_DOC_TYPES } from "@/app/data/constants";
 
@@ -247,12 +246,6 @@ export default function Home() {
         </main>
 
         <div className="absolute bottom-0 left-0 right-0 z-10">
-          <DocumentPanel
-            documents={documents}
-            isUploading={isUploading}
-            accent={accentColor}
-            onRemove={removeDocument}
-          />
           <MessageInput
             input={input}
             setInput={setInput}
@@ -263,6 +256,9 @@ export default function Home() {
             onSend={handleSend}
             onStop={stopGenerating}
             onUpload={handleUpload}
+            documents={documents}
+            isUploading={isUploading}
+            onRemoveDocument={removeDocument}
           />
         </div>
       </div>

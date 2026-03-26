@@ -23,25 +23,25 @@ export function DocumentPanel({
   if (documents.length === 0 && !isUploading) return null;
 
   return (
-    <div className="flex flex-wrap gap-2 px-3 pb-2">
+    <div className="flex flex-wrap gap-2 px-3 pt-3 pb-1">
       {documents.map((doc) => (
         <div
           key={doc.id}
-          className="group flex items-center gap-2 pl-2.5 pr-1.5 py-1.5 rounded-lg border border-neutral-700 bg-neutral-900/50 text-xs text-neutral-300 transition-colors hover:border-neutral-600"
+          className="group flex items-center gap-2 pl-2.5 pr-1.5 py-1.5 rounded-lg border border-neutral-700 bg-neutral-900 text-xs text-neutral-300 transition-colors hover:border-neutral-600 shadow-sm"
         >
           <FileText size={13} style={{ color: accent }} className="shrink-0" />
           <span className="truncate max-w-32">{doc.name}</span>
           <span className="text-neutral-600">{formatSize(doc.size)}</span>
           <button
             onClick={() => onRemove(doc.id)}
-            className="p-0.5 rounded text-neutral-600 hover:text-red-400 transition-colors cursor-pointer opacity-0 group-hover:opacity-100"
+            className="p-0.5 rounded text-neutral-500 hover:text-red-400 transition-colors cursor-pointer opacity-0 group-hover:opacity-100"
           >
             <X size={12} />
           </button>
         </div>
       ))}
       {isUploading && (
-        <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-neutral-700 bg-neutral-900/50 text-xs text-neutral-500">
+        <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-neutral-700 bg-neutral-900 text-xs text-neutral-500 shadow-sm">
           <Loader2 size={13} className="spinner" style={{ color: accent }} />
           <span>Processing...</span>
         </div>
