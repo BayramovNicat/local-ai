@@ -4,9 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import type { Message, Attachment } from "@/app/types";
 import {
   ACCENT_PRESETS,
-  MOCK_MODELS,
-  MOCK_HISTORY,
-  MOCK_MESSAGES,
+  AVAILABLE_MODELS,
 } from "@/app/data/constants";
 import { Sidebar } from "@/app/components/sidebar/sidebar";
 import { Header } from "@/app/components/header/header";
@@ -14,38 +12,65 @@ import { ChatMessage } from "@/app/components/chat/chat-message";
 import { EmptyState } from "@/app/components/chat/empty-state";
 import { MessageInput } from "@/app/components/chat/message-input";
 import { DownloadOverlay } from "@/app/components/chat/download-overlay";
+import { CreateMLCEngine, MLCEngine, hasModelInCache } from "@mlc-ai/web-llm";
 
 export default function Home() {
-  const [messages, setMessages] = useState<Message[]>(MOCK_MESSAGES);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
-  const [selectedModel, setSelectedModel] = useState(MOCK_MODELS[0]);
+  const [selectedModel, setSelectedModel] = useState(AVAILABLE_MODELS[0]);
   const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isDownloading, setIsDownloading] = useState(true);
+  const [isCached, setIsCached] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(0);
-  const [history, setHistory] = useState(MOCK_HISTORY);
+  const [downloadProgressText, setDownloadProgressText] = useState("");
+  const [history, setHistory] = useState<string[]>([]);
   const [activeChat, setActiveChat] = useState<string | null>(null);
   const [accentColor, setAccentColor] = useState(ACCENT_PRESETS[0].hex);
   const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const engineRef = useRef<MLCEngine | null>(null);
 
   useEffect(() => {
-    if (!isDownloading) return;
+    let active = true;
 
-    let progress = 0;
-    const interval = setInterval(() => {
-      progress += Math.floor(Math.random() * 8) + 2;
-      if (progress >= 100) {
-        progress = 100;
-        clearInterval(interval);
-        setTimeout(() => setIsDownloading(false), 400);
+    async function loadEngine() {
+      setIsDownloading(true);
+      setDownloadProgress(0);
+      setDownloadProgressText("Initializing engine...");
+      
+      try {
+        const cached = await hasModelInCache(selectedModel);
+        if (active) setIsCached(cached);
+
+        const engine = await CreateMLCEngine(selectedModel, {
+          initProgressCallback: (report) => {
+            if (active) {
+              setDownloadProgress(Math.round(report.progress * 100));
+              setDownloadProgressText(report.text);
+            }
+          }
+        });
+        
+        if (active) {
+          engineRef.current = engine;
+          setIsDownloading(false);
+        }
+      } catch (err) {
+        if (active) {
+          console.error(err);
+          setDownloadProgressText("Error loading model. See console.");
+        }
       }
-      setDownloadProgress(progress);
-    }, 100);
+    }
 
-    return () => clearInterval(interval);
-  }, [isDownloading, selectedModel]);
+    loadEngine();
+
+    return () => {
+      active = false;
+    };
+  }, [selectedModel]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -57,10 +82,11 @@ export default function Home() {
       setIsModelDropdownOpen(false);
       setIsDownloading(true);
       setDownloadProgress(0);
+      setDownloadProgressText("Initializing engine...");
     }
   }
 
-  function handleSend() {
+  async function handleSend() {
     const text = input.trim();
     if (!text && attachments.length === 0) return;
 
@@ -71,19 +97,49 @@ export default function Home() {
       attachments: attachments.length > 0 ? [...attachments] : undefined,
     };
 
-    const attachmentNote =
-      attachments.length > 0
-        ? `\n\n*${attachments.length} image(s) attached.*`
-        : "";
-    const assistantMsg: Message = {
-      id: (Date.now() + 1).toString(),
-      role: "assistant",
-      content: `I received your message: *"${text || "(no text)"}"*${attachmentNote}\n\nThis is a **mock response** from \`${selectedModel}\`. In a real setup, the model would generate a response locally on your machine.`,
-    };
-
-    setMessages((prev) => [...prev, userMsg, assistantMsg]);
+    setMessages((prev) => [...prev, userMsg]);
     setInput("");
     setAttachments([]);
+
+    if (!engineRef.current) return;
+
+    const assistantId = (Date.now() + 1).toString();
+    const initAssistantMsg: Message = {
+      id: assistantId,
+      role: "assistant",
+      content: "",
+    };
+
+    setMessages((prev) => [...prev, initAssistantMsg]);
+
+    try {
+      const engineMsgs = messages.concat(userMsg).map((m) => ({
+        role: m.role,
+        content: m.content,
+      }));
+
+      const chunks = await engineRef.current.chat.completions.create({
+        messages: engineMsgs,
+        stream: true,
+      });
+
+      let currentText = "";
+      for await (const chunk of chunks) {
+        currentText += chunk.choices[0]?.delta.content || "";
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === assistantId ? { ...m, content: currentText } : m
+          )
+        );
+      }
+    } catch (err) {
+      console.error(err);
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === assistantId ? { ...m, content: "Error generating response." } : m
+        )
+      );
+    }
   }
 
   return (
@@ -92,6 +148,8 @@ export default function Home() {
         <DownloadOverlay
           modelName={selectedModel}
           progress={downloadProgress}
+          progressText={downloadProgressText}
+          isCached={isCached}
           accent={accentColor}
         />
       )}
@@ -111,7 +169,7 @@ export default function Home() {
           }}
           onSelectChat={setActiveChat}
           onDeleteChat={(i) =>
-            setHistory((prev) => prev.filter((_, idx) => idx !== i))
+            setHistory((prev: string[]) => prev.filter((_: string, idx: number) => idx !== i))
           }
           onClose={() => setIsSidebarOpen(false)}
         />
@@ -132,7 +190,7 @@ export default function Home() {
             onToggleModelDropdown={() =>
               setIsModelDropdownOpen(!isModelDropdownOpen)
             }
-            models={MOCK_MODELS}
+            models={AVAILABLE_MODELS}
             selectedModel={selectedModel}
             onSelectModel={handleModelSelect}
           />

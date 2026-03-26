@@ -3,10 +3,14 @@
 export function DownloadOverlay({
   modelName,
   progress,
+  progressText,
+  isCached,
   accent,
 }: {
   modelName: string;
   progress: number;
+  progressText?: string;
+  isCached?: boolean;
   accent: string;
 }) {
   return (
@@ -17,9 +21,11 @@ export function DownloadOverlay({
           style={{ borderColor: `${accent}4D`, borderTopColor: accent }}
         />
         <div className="text-center space-y-1">
-          <p className="text-lg font-semibold text-white">Downloading {modelName}</p>
+          <p className="text-lg font-semibold text-white">
+            {isCached ? "Loading" : "Downloading"} {modelName}
+          </p>
           <p className="text-sm text-neutral-400">
-            {progress < 100 ? "Preparing model for local inference..." : "Almost ready..."}
+            {progressText || (progress < 100 ? "Preparing model for local inference..." : "Almost ready...")}
           </p>
         </div>
         <div className="w-full space-y-2">
