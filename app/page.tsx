@@ -77,6 +77,7 @@ export default function Home() {
   const [history, setHistory] = useState<ChatSession[]>([]);
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [isHistoryLoaded, setIsHistoryLoaded] = useState(false);
+  const [isClientLoaded, setIsClientLoaded] = useState(false);
   const [accentColor, setAccentColor] = useState(ACCENT_PRESETS[0].hex);
   const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
@@ -156,6 +157,32 @@ export default function Home() {
       saveToDB('chat-history', history).catch(err => console.error("Failed to save history:", err));
     }
   }, [history, isHistoryLoaded]);
+
+  // Load preferences from localStorage on mount
+  useEffect(() => {
+    const savedModel = localStorage.getItem("selectedModel");
+    if (savedModel && AVAILABLE_MODELS.includes(savedModel)) {
+      setSelectedModel(savedModel);
+    }
+    const savedAccent = localStorage.getItem("accentColor");
+    if (savedAccent) {
+      setAccentColor(savedAccent);
+    }
+    const savedSidebar = localStorage.getItem("isSidebarOpen");
+    if (savedSidebar !== null) {
+      setIsSidebarOpen(savedSidebar === "true");
+    }
+    setIsClientLoaded(true);
+  }, []);
+
+  // Save preferences to localStorage when they change
+  useEffect(() => {
+    if (isClientLoaded) {
+      localStorage.setItem("selectedModel", selectedModel);
+      localStorage.setItem("accentColor", accentColor);
+      localStorage.setItem("isSidebarOpen", String(isSidebarOpen));
+    }
+  }, [selectedModel, accentColor, isSidebarOpen, isClientLoaded]);
 
   function handleModelSelect(model: string) {
     if (model !== selectedModel) {
