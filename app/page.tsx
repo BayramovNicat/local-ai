@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { ACCENT_PRESETS, AVAILABLE_MODELS } from "@/app/data/constants";
 import { useEngine } from "@/app/hooks/use-engine";
 import { usePreferences } from "@/app/hooks/use-preferences";
@@ -78,6 +78,19 @@ export default function Home() {
   const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
   const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+
+  // Advanced Animation Logic
+  const prevChatId = useRef(activeChatId);
+  const prevMsgCount = useRef(messages.length);
+  
+  const isFirstMsg = prevChatId.current === activeChatId && 
+                     prevMsgCount.current === 0 && 
+                     messages.length > 0;
+  
+  useEffect(() => {
+    prevChatId.current = activeChatId;
+    prevMsgCount.current = messages.length;
+  }, [activeChatId, messages.length]);
 
   // Load documents when active chat changes
   useEffect(() => {
@@ -228,9 +241,9 @@ export default function Home() {
 
         <main
           ref={scrollContainerRef as React.RefObject<HTMLElement>}
-          className="absolute inset-0 overflow-y-auto pt-16 pb-28"
+          className={`absolute inset-0 overflow-y-auto pt-16 pb-28 ${messages.length === 0 ? "flex items-center justify-center" : ""}`}
         >
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 md:px-8 space-y-6">
+          <div className={`max-w-4xl mx-auto px-4 sm:px-6 md:px-8 ${messages.length === 0 ? "mb-32" : "space-y-6"}`}>
             {isLoading && (
               <LoadingBanner
                 modelName={selectedModel}
@@ -241,7 +254,9 @@ export default function Home() {
               />
             )}
             {messages.length === 0 && !isLoading ? (
-              <EmptyState accent={accentColor} />
+              <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+                <EmptyState accent={accentColor} />
+              </div>
             ) : (
               messages.map((msg) => (
                 <ChatMessage
@@ -255,7 +270,13 @@ export default function Home() {
           </div>
         </main>
 
-        <div className="absolute bottom-0 left-0 right-0 z-10">
+        <div 
+          className={`absolute left-0 right-0 z-20 ${
+            messages.length > 0 
+              ? `${isFirstMsg ? "transition-all duration-300 ease-in-out" : ""} bottom-0` 
+              : "top-1/2 translate-y-24"
+          } pointer-events-auto`}
+        >
           <MessageInput
             input={input}
             setInput={setInput}
@@ -269,6 +290,8 @@ export default function Home() {
             documents={documents}
             isUploading={isUploading}
             onRemoveDocument={removeDocument}
+            activeChatId={activeChatId}
+            isCentered={messages.length === 0 && !isLoading}
           />
         </div>
       </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useEffect } from "react";
 import { Send, Paperclip, X, Square } from "lucide-react";
 import { Tooltip } from "../ui/tooltip";
 import { DocumentPanel } from "./document-panel";
@@ -20,6 +20,8 @@ export function MessageInput({
   documents,
   isUploading,
   onRemoveDocument,
+  activeChatId,
+  isCentered = false,
 }: {
   input: string;
   setInput: (v: string) => void;
@@ -33,14 +35,30 @@ export function MessageInput({
   documents: Document[];
   isUploading: boolean;
   onRemoveDocument: (docId: string) => void;
+  activeChatId: string | null;
+  isCentered?: boolean;
 }) {
   const editorRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const hasContent = input.trim() || attachments.length > 0;
 
+  // Auto-focus logic
+  useEffect(() => {
+    // Focus on mount and whenever chat context changes
+    if (editorRef.current) {
+      editorRef.current.focus();
+    }
+  }, [activeChatId, isCentered]);
+
   return (
-    <div className="p-3 sm:p-4 bg-[#0a0a0a]/40 backdrop-blur-md">
-      <div className="max-w-4xl mx-auto">
+    <div className={`p-3 sm:p-4 transition-all duration-300 ease-in-out ${
+      isCentered 
+        ? "bg-transparent" 
+        : "bg-[#0a0a0a]/40 backdrop-blur-md"
+    }`}>
+      <div className={`max-w-4xl mx-auto transition-all duration-300 ease-in-out ${
+        isCentered ? "scale-[1.02]" : "scale-100"
+      }`}>
         <div
           className="rounded-xl border border-neutral-700 transition-colors bg-[#0a0a0a]"
           style={{ borderColor: hasContent ? `${accent}4D` : undefined }}
