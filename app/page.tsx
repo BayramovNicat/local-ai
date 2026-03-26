@@ -1,16 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { ACCENT_PRESETS, AVAILABLE_MODELS } from "@/app/data/constants";
 import { useEngine } from "@/app/hooks/use-engine";
 import { usePreferences } from "@/app/hooks/use-preferences";
 import { useChat } from "@/app/hooks/use-chat";
+import { useEmbeddings } from "@/app/hooks/use-embeddings";
 import { Sidebar } from "@/app/components/sidebar/sidebar";
 import { Header } from "@/app/components/header/header";
 import { ChatMessage } from "@/app/components/chat/chat-message";
 import { EmptyState } from "@/app/components/chat/empty-state";
 import { MessageInput } from "@/app/components/chat/message-input";
 import { LoadingBanner } from "@/app/components/chat/loading-banner";
+import { SearchModal } from "@/app/components/search/search-modal";
 
 export default function Home() {
   const {
@@ -37,14 +39,70 @@ export default function Home() {
     handleSend,
     newChat,
     selectChat,
-    deleteChat,
+    deleteChat: deleteChatOriginal,
     editMessage,
     isStreaming,
     stopGenerating,
   } = useChat(waitForEngine);
 
+  const {
+    isEmbeddingReady,
+    isIndexing,
+    isSearching,
+    initEmbeddingEngine,
+    embedMessages,
+    search,
+    cleanupEmbeddings,
+  } = useEmbeddings();
+
   const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
   const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+
+  // Auto-embed messages after streaming completes
+  useEffect(() => {
+    if (!isStreaming && messages.length > 0 && activeChatId) {
+      embedMessages(messages, activeChatId);
+    }
+    // Only run when streaming stops
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isStreaming]);
+
+  // Cmd/Ctrl+K keyboard shortcut
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setIsSearchOpen((prev) => {
+          if (!prev) initEmbeddingEngine();
+          return !prev;
+        });
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, []);
+
+  const handleDeleteChat = useCallback(
+    (id: string) => {
+      deleteChatOriginal(id);
+      cleanupEmbeddings(id);
+    },
+    [deleteChatOriginal, cleanupEmbeddings],
+  );
+
+  const handleSearchSelect = useCallback(
+    (chatId: string) => {
+      selectChat(chatId);
+      setIsSearchOpen(false);
+    },
+    [selectChat],
+  );
+
+  const handleSearch = useCallback(
+    (query: string) => search(query, history),
+    [search, history],
+  );
 
   function handleModelSelect(model: string) {
     if (model !== selectedModel) {
@@ -65,7 +123,7 @@ export default function Home() {
         activeChatId={activeChatId}
         onNewChat={newChat}
         onSelectChat={selectChat}
-        onDeleteChat={deleteChat}
+        onDeleteChat={handleDeleteChat}
         onClose={() => setIsSidebarOpen(false)}
       />
 
@@ -74,6 +132,10 @@ export default function Home() {
           accent={accentColor}
           isSidebarOpen={isSidebarOpen}
           onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+          onOpenSearch={() => {
+            initEmbeddingEngine();
+            setIsSearchOpen(true);
+          }}
           isColorPickerOpen={isColorPickerOpen}
           onToggleColorPicker={() => setIsColorPickerOpen(!isColorPickerOpen)}
           onSelectColor={(hex) => {
@@ -126,6 +188,17 @@ export default function Home() {
           onStop={stopGenerating}
         />
       </div>
+
+      <SearchModal
+        isOpen={isSearchOpen}
+        accent={accentColor}
+        isSearching={isSearching}
+        isIndexing={isIndexing}
+        isEmbeddingReady={isEmbeddingReady}
+        onSearch={handleSearch}
+        onSelectResult={handleSearchSelect}
+        onClose={() => setIsSearchOpen(false)}
+      />
     </div>
   );
 }

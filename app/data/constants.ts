@@ -22,3 +22,6 @@ export const AVAILABLE_MODELS = [
   "Qwen2.5-1.5B-Instruct-q4f16_1-MLC",
   "Qwen2.5-7B-Instruct-q4f16_1-MLC",
 ];
+
+export const EMBEDDING_MODEL = "snowflake-arctic-embed-s-q0f32-MLC-b4";
+

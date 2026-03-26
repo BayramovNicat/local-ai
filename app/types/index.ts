@@ -22,3 +22,21 @@ export interface AccentPreset {
   name: string;
   hex: string;
 }
+
+export interface EmbeddingRecord {
+  id: string;
+  chatId: string;
+  messageId: string;
+  text: string;
+  vector: number[];
+  timestamp: number;
+}
+
+export interface SearchResult {
+  chatId: string;
+  chatTitle: string;
+  messageId: string;
+  text: string;
+  score: number;
+  role: "user" | "assistant";
+}

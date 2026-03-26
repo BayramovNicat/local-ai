@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useCallback } from "react";
-import { Menu, X } from "lucide-react";
+import { Menu, X, Search } from "lucide-react";
 import type { AccentPreset } from "@/app/types";
 import { useClickOutside } from "@/app/hooks/use-click-outside";
 import { ColorPicker } from "./color-picker";
@@ -11,6 +11,7 @@ export function Header({
   accent,
   isSidebarOpen,
   onToggleSidebar,
+  onOpenSearch,
   isColorPickerOpen,
   onToggleColorPicker,
   onSelectColor,
@@ -24,6 +25,7 @@ export function Header({
   accent: string;
   isSidebarOpen: boolean;
   onToggleSidebar: () => void;
+  onOpenSearch: () => void;
   isColorPickerOpen: boolean;
   onToggleColorPicker: () => void;
   onSelectColor: (hex: string) => void;
@@ -65,6 +67,13 @@ export function Header({
       </div>
 
       <div className="flex items-center gap-2">
+        <button
+          onClick={onOpenSearch}
+          className="p-2 rounded-lg text-neutral-400 hover:bg-neutral-800 hover:text-neutral-200 transition-colors cursor-pointer"
+          title="Search (⌘K)"
+        >
+          <Search size={18} />
+        </button>
         <div className="relative" ref={colorPickerRef}>
           <ColorPicker
             isOpen={isColorPickerOpen}
