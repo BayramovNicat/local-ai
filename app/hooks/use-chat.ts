@@ -101,7 +101,11 @@ export function useChat(
             : s,
         );
         const session = updated.find((s) => s.id === chatId);
-        if (session) saveChatToDB(session).catch(console.error);
+        if (session)
+          saveChatToDB(chatId, {
+            title: session.title,
+            messages: session.messages,
+          }).catch(console.error);
         return updated;
       });
     },
@@ -136,7 +140,9 @@ export function useChat(
     };
     setHistory((prev) => [newSession, ...prev]);
     setActiveChatId(id);
-    await saveChatToDB(newSession).catch(console.error);
+    await saveChatToDB(id, { title: newSession.title, messages: [] }).catch(
+      console.error,
+    );
     return id;
   }, []);
 

@@ -4,7 +4,7 @@ const DB_NAME = "local-ai";
 const STORE_CHATS = "chats";
 const STORE_EMBEDDINGS = "embeddings";
 const STORE_DOCUMENTS = "documents";
-const DB_VERSION = 3;
+const DB_VERSION = 4;
 
 function openDB(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -13,8 +13,11 @@ function openDB(): Promise<IDBDatabase> {
       const db = (e.target as IDBOpenDBRequest).result;
       const oldVersion = e.oldVersion;
 
+      if (oldVersion < 4 && db.objectStoreNames.contains(STORE_CHATS)) {
+        db.deleteObjectStore(STORE_CHATS);
+      }
       if (!db.objectStoreNames.contains(STORE_CHATS)) {
-        db.createObjectStore(STORE_CHATS, { keyPath: "id" });
+        db.createObjectStore(STORE_CHATS);
       }
 
       if (!db.objectStoreNames.contains(STORE_EMBEDDINGS)) {
@@ -47,11 +50,14 @@ function openDB(): Promise<IDBDatabase> {
 
 // ── Chat CRUD ──────────────────────────────────────────────
 
-export async function saveChat(session: ChatSession): Promise<void> {
+export async function saveChat(
+  id: string,
+  data: Omit<ChatSession, "id">,
+): Promise<void> {
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_CHATS, "readwrite");
-    const req = tx.objectStore(STORE_CHATS).put(session);
+    const req = tx.objectStore(STORE_CHATS).put(data, id);
     req.onsuccess = () => resolve();
     req.onerror = () => reject(req.error);
   });
@@ -61,9 +67,15 @@ export async function loadAllChats(): Promise<ChatSession[]> {
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_CHATS, "readonly");
-    const req = tx.objectStore(STORE_CHATS).getAll();
-    req.onsuccess = () => resolve(req.result ?? []);
-    req.onerror = () => reject(req.error);
+    const store = tx.objectStore(STORE_CHATS);
+    const keysReq = store.getAllKeys();
+    const valsReq = store.getAll();
+    tx.oncomplete = () => {
+      const keys = keysReq.result as string[];
+      const vals = valsReq.result as Omit<ChatSession, "id">[];
+      resolve(keys.map((id, i) => ({ id, ...vals[i] })));
+    };
+    tx.onerror = () => reject(tx.error);
   });
 }
 
