@@ -56,12 +56,18 @@ export function Header({
   return (
     <header className="absolute top-0 left-0 right-0 flex items-center justify-between px-3 sm:px-4 py-3 bg-[#0a0a0a]/40 backdrop-blur-md z-10">
       <div className="flex items-center gap-3">
-        <button
-          onClick={onToggleSidebar}
-          className="p-2 rounded-lg text-neutral-400 hover:bg-neutral-800 hover:text-neutral-200 transition-colors cursor-pointer"
+        <Tooltip 
+          content={isSidebarOpen ? "Collapse Sidebar" : "Expand Sidebar"} 
+          position="bottom" 
+          className="inline-block"
         >
-          {isSidebarOpen ? <X size={18} /> : <Menu size={18} />}
-        </button>
+          <button
+            onClick={onToggleSidebar}
+            className="p-2 rounded-lg text-neutral-400 hover:bg-neutral-800 hover:text-neutral-200 transition-colors cursor-pointer"
+          >
+            {isSidebarOpen ? <X size={18} /> : <Menu size={18} />}
+          </button>
+        </Tooltip>
         <h1 className="text-base font-semibold text-white tracking-tight">
           local<span style={{ color: accent }}>.ai</span>
         </h1>

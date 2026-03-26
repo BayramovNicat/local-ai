@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Bot, ChevronDown } from "lucide-react";
+import { Tooltip } from "../ui/tooltip";
 
 export function ModelSelector({
   isOpen,
@@ -25,17 +26,19 @@ export function ModelSelector({
 
   return (
     <>
-      <button
-        onClick={onToggle}
-        className="flex items-center gap-2 px-3 py-2 rounded-lg border border-neutral-700 hover:border-neutral-500 transition-colors text-sm cursor-pointer max-w-45 sm:max-w-none"
-      >
-        <Bot size={14} style={{ color: accent }} />
-        <span className="text-neutral-200 truncate">{selected}</span>
-        <ChevronDown
-          size={14}
-          className={`text-neutral-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
-        />
-      </button>
+      <Tooltip content="Select Model" position="bottom" className="inline-block">
+        <button
+          onClick={onToggle}
+          className="flex items-center gap-2 px-3 py-2 rounded-lg border border-neutral-700 hover:border-neutral-500 transition-colors text-sm cursor-pointer max-w-45 sm:max-w-none"
+        >
+          <Bot size={14} style={{ color: accent }} />
+          <span className="text-neutral-200 truncate">{selected}</span>
+          <ChevronDown
+            size={14}
+            className={`text-neutral-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
+          />
+        </button>
+      </Tooltip>
 
       {isOpen && (
         <div className="absolute right-0 top-full mt-2 w-56 rounded-xl bg-[#0a0a0a] shadow-2xl shadow-black/50 z-40 border border-neutral-800/50 p-2 space-y-1">

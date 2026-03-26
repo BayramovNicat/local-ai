@@ -2,6 +2,7 @@
 
 import { useRef } from "react";
 import { Send, Paperclip, X, Square } from "lucide-react";
+import { Tooltip } from "../ui/tooltip";
 import { DocumentPanel } from "./document-panel";
 import type { Attachment, Document } from "@/app/types";
 import { SUPPORTED_DOC_TYPES } from "@/app/data/constants";
@@ -75,13 +76,14 @@ export function MessageInput({
             </div>
           )}
           <div className="flex items-end gap-2 p-2">
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="shrink-0 p-2 rounded-lg text-neutral-500 hover:text-neutral-300 transition-colors cursor-pointer"
-              title="Attach files (images, .txt, .md, .pdf)"
-            >
-              <Paperclip size={18} />
-            </button>
+            <Tooltip content="Attach files" position="top" className="inline-block">
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="shrink-0 p-2 rounded-lg text-neutral-500 hover:text-neutral-300 transition-colors cursor-pointer"
+              >
+                <Paperclip size={18} />
+              </button>
+            </Tooltip>
             <input
               ref={fileInputRef}
               id="file-upload"
@@ -143,29 +145,32 @@ export function MessageInput({
               }}
             />
             {isStreaming ? (
-              <button
-                onClick={onStop}
-                className="shrink-0 p-2 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-800 transition-all cursor-pointer"
-                title="Stop generation"
-              >
-                <Square size={18} fill="currentColor" />
-              </button>
+              <Tooltip content="Stop generation" position="top" className="inline-block">
+                <button
+                  onClick={onStop}
+                  className="shrink-0 p-2 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-800 transition-all cursor-pointer"
+                >
+                  <Square size={18} fill="currentColor" />
+                </button>
+              </Tooltip>
             ) : (
-              <button
-                onClick={() => {
-                  onSend();
-                  if (editorRef.current) editorRef.current.textContent = "";
-                }}
-                disabled={!hasContent}
-                className={`shrink-0 p-2 rounded-lg transition-all cursor-pointer ${
-                  hasContent
-                    ? "text-black"
-                    : "text-neutral-600 cursor-not-allowed"
-                }`}
-                style={hasContent ? { backgroundColor: accent } : undefined}
-              >
-                <Send size={18} />
-              </button>
+              <Tooltip content="Send message" position="top" className="inline-block">
+                <button
+                  onClick={() => {
+                    onSend();
+                    if (editorRef.current) editorRef.current.textContent = "";
+                  }}
+                  disabled={!hasContent}
+                  className={`shrink-0 p-2 rounded-lg transition-all cursor-pointer ${
+                    hasContent
+                      ? "text-black"
+                      : "text-neutral-600 cursor-not-allowed"
+                  }`}
+                  style={hasContent ? { backgroundColor: accent } : undefined}
+                >
+                  <Send size={18} />
+                </button>
+              </Tooltip>
             )}
           </div>
         </div>

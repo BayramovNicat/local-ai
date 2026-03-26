@@ -67,15 +67,17 @@ export function Sidebar({
             >
               <MessageSquare size={14} className="shrink-0" />
               <span className="truncate flex-1 min-w-0">{session.title}</span>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDeleteChat(session.id);
-                }}
-                className="opacity-0 group-hover:opacity-100 transition-opacity text-neutral-500 hover:text-red-400 cursor-pointer shrink-0"
-              >
-                <Trash2 size={13} />
-              </button>
+              <Tooltip content="Delete Chat" position="right" className="inline-block">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDeleteChat(session.id);
+                  }}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity text-neutral-500 hover:text-red-400 cursor-pointer shrink-0 py-1"
+                >
+                  <Trash2 size={13} />
+                </button>
+              </Tooltip>
             </div>
           ))}
         </div>
