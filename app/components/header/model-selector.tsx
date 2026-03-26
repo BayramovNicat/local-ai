@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Bot, ChevronDown } from "lucide-react";
+import { Bot, ChevronDown, Search } from "lucide-react";
 import { Tooltip } from "../ui/tooltip";
 
 export function ModelSelector({
@@ -41,41 +41,59 @@ export function ModelSelector({
       </Tooltip>
 
       {isOpen && (
-        <div className="absolute right-0 top-full mt-2 w-56 rounded-xl bg-[#0a0a0a] shadow-2xl shadow-black/50 z-40 border border-neutral-800/50 p-2 space-y-1">
-          <input
-            id="model-search"
-            name="model-search"
-            type="text"
-            placeholder="Search models..."
-            autoFocus
-            className="w-full px-3 py-2 text-sm bg-transparent rounded-lg text-neutral-200 placeholder-neutral-500 focus:outline-none"
-            onChange={(e) => setSearch(e.target.value)}
-            value={search}
-          />
-          {filtered.map((model) => (
-            <button
-              key={model}
-              onClick={() => {
-                onSelect(model);
-                setSearch("");
-              }}
-              className={`w-full text-left px-3 py-2 text-sm transition-colors cursor-pointer rounded-lg border ${
-                model === selected
-                  ? ""
-                  : "border-transparent text-neutral-400 hover:bg-neutral-900 hover:text-neutral-200"
-              }`}
-              style={
-                model === selected
-                  ? { borderColor: `${accent}4D`, color: "#ffffff" }
-                  : undefined
-              }
-            >
-              {model}
-              {model === selected && (
-                <span className="ml-2 text-xs text-neutral-500">active</span>
-              )}
-            </button>
-          ))}
+        <div className="absolute right-0 top-full mt-2 w-72 rounded-xl bg-[#0a0a0a] shadow-2xl shadow-black/50 z-40 border border-neutral-800/50 flex flex-col overflow-hidden backdrop-blur-xl">
+          <div className="flex items-center gap-2 px-3 border-b border-neutral-800/50">
+            <Search size={14} className="text-neutral-500" />
+            <input
+              id="model-search"
+              name="model-search"
+              type="text"
+              placeholder="Search models..."
+              autoFocus
+              className="w-full py-3 text-sm bg-transparent text-neutral-200 placeholder-neutral-500 focus:outline-none"
+              onChange={(e) => setSearch(e.target.value)}
+              value={search}
+            />
+          </div>
+          <div className="p-1 max-h-100 overflow-y-auto">
+            {filtered.length > 0 ? (
+              filtered.map((model) => (
+                <button
+                  key={model}
+                  onClick={() => {
+                    onSelect(model);
+                    setSearch("");
+                  }}
+                  className={`w-full text-left px-3 py-2.5 text-sm transition-all cursor-pointer rounded-lg flex items-center justify-between group ${
+                    model === selected
+                      ? "bg-neutral-900/50"
+                      : "hover:bg-neutral-900 text-neutral-400 hover:text-neutral-200"
+                  }`}
+                  style={
+                    model === selected
+                      ? { borderLeft: `2px solid ${accent}` }
+                      : undefined
+                  }
+                >
+                  <span className={`truncate ${model === selected ? "text-white font-medium" : ""}`}>
+                    {model}
+                  </span>
+                  {model === selected && (
+                    <span 
+                      className="text-[10px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-400 group-hover:text-white transition-colors"
+                      style={{ color: accent }}
+                    >
+                      active
+                    </span>
+                  )}
+                </button>
+              ))
+            ) : (
+              <div className="px-3 py-8 text-center text-neutral-500 text-sm">
+                No models found
+              </div>
+            )}
+          </div>
         </div>
       )}
     </>
