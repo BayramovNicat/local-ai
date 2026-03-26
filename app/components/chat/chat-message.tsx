@@ -19,12 +19,12 @@ export function ChatMessage({
   const isUser = message.role === "user";
 
   return (
-    <div className={`group flex ${isUser ? "justify-end" : ""}`}>
+    <div className={`group flex ${isUser ? "justify-end" : "justify-start"}`}>
       <div
-        className={`flex flex-col max-w-[90%] sm:max-w-[80%] ${isUser ? "items-end" : "items-start"}`}
+        className={`flex flex-col w-full max-w-full ${isUser ? "items-end" : "items-start"}`}
       >
         <div
-          className={`rounded-2xl px-4 py-3 ${isUser ? "text-white border" : "text-neutral-200"}`}
+          className={`rounded-2xl px-4 py-3 break-all overflow-hidden ${isUser ? "text-white border" : "text-neutral-200"}`}
           style={isUser ? { borderColor: `${accent}4D` } : undefined}
         >
           {message.attachments && message.attachments.length > 0 && (

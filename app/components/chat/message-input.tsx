@@ -32,7 +32,7 @@ export function MessageInput({
 
   return (
     <div className="p-3 sm:p-4 bg-[#0a0a0a]/40 backdrop-blur-md">
-      <div className="max-w-3xl mx-auto">
+      <div className="max-w-4xl mx-auto">
         <div
           className="rounded-xl border border-neutral-700 transition-colors"
           style={{ borderColor: hasContent ? `${accent}4D` : undefined }}

@@ -28,8 +28,13 @@ export default function Home() {
     setIsSidebarOpen,
   } = usePreferences();
 
-  const { waitForEngine, isLoading, isCached, downloadProgress, downloadProgressText } =
-    useEngine(selectedModel);
+  const {
+    waitForEngine,
+    isLoading,
+    isCached,
+    downloadProgress,
+    downloadProgressText,
+  } = useEngine(selectedModel);
 
   const {
     isEmbeddingReady,
@@ -212,31 +217,33 @@ export default function Home() {
           onSelectModel={handleModelSelect}
         />
 
-        <main 
+        <main
           ref={scrollContainerRef as React.RefObject<HTMLElement>}
-          className="absolute inset-0 overflow-y-auto px-3 sm:px-4 md:px-6 pt-16 pb-28 space-y-6"
+          className="absolute inset-0 overflow-y-auto pt-16 pb-28"
         >
-          {isLoading && (
-            <LoadingBanner
-              modelName={selectedModel}
-              progress={downloadProgress}
-              progressText={downloadProgressText}
-              isCached={isCached}
-              accent={accentColor}
-            />
-          )}
-          {messages.length === 0 && !isLoading ? (
-            <EmptyState accent={accentColor} />
-          ) : (
-            messages.map((msg) => (
-              <ChatMessage
-                key={msg.id}
-                message={msg}
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 md:px-8 space-y-6">
+            {isLoading && (
+              <LoadingBanner
+                modelName={selectedModel}
+                progress={downloadProgress}
+                progressText={downloadProgressText}
+                isCached={isCached}
                 accent={accentColor}
-                onEdit={editMessage}
               />
-            ))
-          )}
+            )}
+            {messages.length === 0 && !isLoading ? (
+              <EmptyState accent={accentColor} />
+            ) : (
+              messages.map((msg) => (
+                <ChatMessage
+                  key={msg.id}
+                  message={msg}
+                  accent={accentColor}
+                  onEdit={editMessage}
+                />
+              ))
+            )}
+          </div>
         </main>
 
         <div className="absolute bottom-0 left-0 right-0 z-10">
