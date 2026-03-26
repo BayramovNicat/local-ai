@@ -1,7 +1,8 @@
 "use client";
 
 import { useRef, useCallback } from "react";
-import { Menu, X, Search } from "lucide-react";
+import { Menu, X, Search, Palette } from "lucide-react";
+import { Tooltip } from "../ui/tooltip";
 import type { AccentPreset } from "@/app/types";
 import { useClickOutside } from "@/app/hooks/use-click-outside";
 import { ColorPicker } from "./color-picker";
@@ -67,19 +68,27 @@ export function Header({
       </div>
 
       <div className="flex items-center gap-2">
-        <button
-          onClick={onOpenSearch}
-          className="p-2 rounded-lg text-neutral-400 hover:bg-neutral-800 hover:text-neutral-200 transition-colors cursor-pointer"
-          title="Search (⌘K)"
-        >
-          <Search size={18} />
-        </button>
+        <Tooltip content="Search" shortcut="⌘K" position="bottom" className="inline-block">
+          <button
+            onClick={onOpenSearch}
+            className="p-2 rounded-lg text-neutral-400 hover:bg-neutral-800 hover:text-neutral-200 transition-colors cursor-pointer"
+          >
+            <Search size={18} />
+          </button>
+        </Tooltip>
         <div className="relative" ref={colorPickerRef}>
+          <Tooltip content="Theme" position="bottom" className="inline-block">
+            <button
+              onClick={onToggleColorPicker}
+              className="p-2 rounded-lg text-neutral-400 hover:bg-neutral-800 hover:text-neutral-200 transition-colors cursor-pointer"
+            >
+              <Palette size={18} />
+            </button>
+          </Tooltip>
           <ColorPicker
             isOpen={isColorPickerOpen}
             accent={accent}
             presets={accentPresets}
-            onToggle={onToggleColorPicker}
             onSelect={onSelectColor}
           />
         </div>

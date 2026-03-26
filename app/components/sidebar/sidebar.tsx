@@ -1,7 +1,5 @@
-"use client";
-
 import { MessageSquare, Plus, Trash2 } from "lucide-react";
-
+import { Tooltip } from "@/app/components/ui/tooltip";
 import type { ChatSession } from "@/app/types";
 
 export function Sidebar({
@@ -40,14 +38,16 @@ export function Sidebar({
         }`}
       >
         <div className="p-4">
-          <button
-            onClick={onNewChat}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl transition-colors text-sm font-medium cursor-pointer border truncate whitespace-nowrap"
-            style={{ borderColor: `${accent}4D`, color: accent }}
-          >
-            <Plus size={16} className="shrink-0" />
-            <span className="truncate">New Chat</span>
-          </button>
+          <Tooltip content="New Chat" shortcut="⌘⇧O" position="right">
+            <button
+              onClick={onNewChat}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl transition-colors text-sm font-medium cursor-pointer border truncate whitespace-nowrap"
+              style={{ borderColor: `${accent}4D`, color: accent }}
+            >
+              <Plus size={16} className="shrink-0" />
+              <span className="truncate">New Chat</span>
+            </button>
+          </Tooltip>
         </div>
 
         <div className="flex-1 overflow-y-auto p-3 space-y-1">

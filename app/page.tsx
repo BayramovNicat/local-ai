@@ -93,21 +93,30 @@ export default function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isStreaming]);
 
-  // Cmd/Ctrl+K keyboard shortcut
+  // Global Shortcuts
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+      const isMod = e.metaKey || e.ctrlKey;
+      const isShift = e.shiftKey;
+      const key = e.key.toLowerCase();
+
+      // Cmd/Ctrl+K: Search
+      if (isMod && key === "k") {
         e.preventDefault();
-        setIsSearchOpen((prev) => {
-          if (!prev) initEmbeddingEngine();
-          return !prev;
-        });
+        initEmbeddingEngine();
+        setIsSearchOpen(true);
+      }
+
+      // Cmd+Shift+O OR Alt+N: New Chat
+      if (isMod && isShift && key === "o") {
+        e.preventDefault();
+        newChat();
       }
     };
+
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [newChat, initEmbeddingEngine]);
 
   const handleDeleteChat = useCallback(
     (id: string) => {

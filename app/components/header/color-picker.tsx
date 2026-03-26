@@ -1,31 +1,20 @@
 "use client";
 
-import { Palette } from "lucide-react";
 import type { AccentPreset } from "@/app/types";
 
 export function ColorPicker({
   isOpen,
   accent,
   presets,
-  onToggle,
   onSelect,
 }: {
   isOpen: boolean;
   accent: string;
   presets: AccentPreset[];
-  onToggle: () => void;
   onSelect: (hex: string) => void;
 }) {
   return (
     <>
-      <button
-        onClick={onToggle}
-        className="p-2 rounded-lg hover:bg-neutral-800 transition-colors cursor-pointer"
-        style={{ color: accent }}
-      >
-        <Palette size={18} />
-      </button>
-
       {isOpen && (
         <div className="absolute right-0 top-full mt-2 w-48 rounded-xl bg-[#0a0a0a] shadow-2xl shadow-black/50 z-40 border border-neutral-800/50 p-2 space-y-2">
           <div className="grid grid-cols-4 gap-1.5">
