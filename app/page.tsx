@@ -82,11 +82,12 @@ export default function Home() {
   // Advanced Animation Logic
   const prevChatId = useRef(activeChatId);
   const prevMsgCount = useRef(messages.length);
-  
-  const isFirstMsg = prevChatId.current === activeChatId && 
-                     prevMsgCount.current === 0 && 
-                     messages.length > 0;
-  
+
+  const isFirstMsg =
+    prevChatId.current === activeChatId &&
+    prevMsgCount.current === 0 &&
+    messages.length > 0;
+
   useEffect(() => {
     prevChatId.current = activeChatId;
     prevMsgCount.current = messages.length;
@@ -243,7 +244,9 @@ export default function Home() {
           ref={scrollContainerRef as React.RefObject<HTMLElement>}
           className={`absolute inset-0 overflow-y-auto pt-16 pb-28 ${messages.length === 0 ? "flex items-center justify-center" : ""}`}
         >
-          <div className={`max-w-4xl mx-auto px-4 sm:px-6 md:px-8 ${messages.length === 0 ? "mb-32" : "space-y-6"}`}>
+          <div
+            className={`max-w-4xl mx-auto px-4 sm:px-6 md:px-8 ${messages.length === 0 ? "" : "space-y-6"}`}
+          >
             {isLoading && (
               <LoadingBanner
                 modelName={selectedModel}
@@ -270,10 +273,10 @@ export default function Home() {
           </div>
         </main>
 
-        <div 
+        <div
           className={`absolute left-0 right-0 z-20 ${
-            messages.length > 0 
-              ? `${isFirstMsg ? "transition-all duration-300 ease-in-out" : ""} bottom-0` 
+            messages.length > 0
+              ? `${isFirstMsg ? "transition-all duration-300 ease-in-out" : ""} bottom-0`
               : "top-1/2 translate-y-24"
           } pointer-events-auto`}
         >

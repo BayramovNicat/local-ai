@@ -51,14 +51,16 @@ export function MessageInput({
   }, [activeChatId, isCentered]);
 
   return (
-    <div className={`p-3 sm:p-4 transition-all duration-300 ease-in-out ${
-      isCentered 
-        ? "bg-transparent" 
-        : "bg-[#0a0a0a]/40 backdrop-blur-md"
-    }`}>
-      <div className={`max-w-4xl mx-auto transition-all duration-300 ease-in-out ${
-        isCentered ? "scale-[1.02]" : "scale-100"
-      }`}>
+    <div
+      className={`p-3 sm:p-4 transition-all duration-300 ease-in-out ${
+        isCentered ? "bg-transparent" : "bg-[#0a0a0a]/40 backdrop-blur-md"
+      }`}
+    >
+      <div
+        className={`max-w-4xl mx-auto transition-all duration-300 ease-in-out ${
+          isCentered ? "scale-[1.02]" : "scale-100"
+        }`}
+      >
         <div
           className="rounded-xl border border-neutral-700 transition-colors bg-[#0a0a0a]"
           style={{ borderColor: hasContent ? `${accent}4D` : undefined }}
@@ -94,7 +96,11 @@ export function MessageInput({
             </div>
           )}
           <div className="flex items-end gap-2 p-2">
-            <Tooltip content="Attach files" position="top" className="inline-block">
+            <Tooltip
+              content="Attach files"
+              position="top"
+              className="inline-block"
+            >
               <button
                 onClick={() => fileInputRef.current?.click()}
                 className="shrink-0 p-2 rounded-lg text-neutral-500 hover:text-neutral-300 transition-colors cursor-pointer"
@@ -123,7 +129,7 @@ export function MessageInput({
               contentEditable
               aria-label="Message input"
               data-placeholder="Message local.ai..."
-              className="flex-1 min-h-7 max-h-50 overflow-y-auto text-sm text-neutral-200 focus:outline-none empty:before:content-[attr(data-placeholder)] empty:before:text-neutral-500 [&_img]:max-w-full [&_img]:max-h-75 [&_img]:rounded-lg [&_img]:my-1"
+              className="flex-1 min-h-20 max-h-50 overflow-y-auto text-sm text-neutral-200 focus:outline-none empty:before:content-[attr(data-placeholder)] empty:before:text-neutral-500 [&_img]:max-w-full [&_img]:max-h-75 [&_img]:rounded-lg [&_img]:my-1"
               onInput={() => setInput(editorRef.current?.textContent || "")}
               onPaste={async (e) => {
                 const items = e.clipboardData?.items;
@@ -163,7 +169,11 @@ export function MessageInput({
               }}
             />
             {isStreaming ? (
-              <Tooltip content="Stop generation" position="top" className="inline-block">
+              <Tooltip
+                content="Stop generation"
+                position="top"
+                className="inline-block"
+              >
                 <button
                   onClick={onStop}
                   className="shrink-0 p-2 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-800 transition-all cursor-pointer"
@@ -172,7 +182,11 @@ export function MessageInput({
                 </button>
               </Tooltip>
             ) : (
-              <Tooltip content="Send message" position="top" className="inline-block">
+              <Tooltip
+                content="Send message"
+                position="top"
+                className="inline-block"
+              >
                 <button
                   onClick={() => {
                     onSend();
