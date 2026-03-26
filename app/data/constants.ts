@@ -17,15 +17,13 @@ export const ACCENT_PRESETS: AccentPreset[] = [
 
 export const AVAILABLE_MODELS = [
   "Qwen2.5-1.5B-Instruct-q4f16_1-MLC",
+  "Qwen2.5-7B-Instruct-q4f16_1-MLC",
   "Llama-3.2-1B-Instruct-q4f16_1-MLC",
   "Llama-3.1-8B-Instruct-q4f32_1-MLC",
   "Phi-3.5-mini-instruct-q4f16_1-MLC",
-  "Qwen2.5-7B-Instruct-q4f16_1-MLC",
 ];
 
 export const EMBEDDING_MODEL = "snowflake-arctic-embed-s-q0f32-MLC-b4";
 
 export const MAX_CONTEXT_CHARS = 1500;
 export const SUPPORTED_DOC_TYPES = ".txt,.md,.pdf";
-
-
