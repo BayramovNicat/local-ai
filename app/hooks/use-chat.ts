@@ -11,7 +11,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 export function useChat(
   waitForEngine: () => Promise<MLCEngineInterface>,
-  getContext?: (query: string, chatId: string) => Promise<string>,
+  getContext?: (
+    query: string,
+    chatId: string,
+    history: ChatSession[],
+  ) => Promise<{ docContext: string; convContext: string }>,
 ) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -134,9 +138,12 @@ export function useChat(
       const engine = await waitForEngine();
 
       // Retrieve RAG context if documents are attached
-      let ragContext = "";
+      let docContext = "";
+      let convContext = "";
       if (getContext && currentChatId) {
-        ragContext = await getContext(text, currentChatId);
+        const result = await getContext(text, currentChatId, history);
+        docContext = result.docContext;
+        convContext = result.convContext;
       }
 
       const engineMsgs: Array<{
@@ -145,10 +152,18 @@ export function useChat(
       }> = [];
 
       // Inject RAG context as system message
-      if (ragContext) {
+      if (docContext) {
         engineMsgs.push({
           role: "system" as const,
-          content: `Use the following document context to answer the user's question. If the context is not relevant, ignore it and answer normally.\n\n${ragContext}`,
+          content: `The following document context may be relevant to the user's request. Use it if applicable:\n\n${docContext}`,
+        });
+      }
+
+      // Inject Conversation context as system message
+      if (convContext) {
+        engineMsgs.push({
+          role: "system" as const,
+          content: `The following context from past conversations may be relevant. Use it if it helps answer the query:\n\n${convContext}`,
         });
       }
 
@@ -244,6 +259,7 @@ export function useChat(
     activeChatId,
     waitForEngine,
     getContext,
+    history,
     createChat,
     syncHistoryWithMessages,
   ]);

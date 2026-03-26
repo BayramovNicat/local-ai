@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import type { Document as DocType, EmbeddingRecord } from "@/app/types";
+import type { Document as DocType, EmbeddingRecord, ChatSession } from "@/app/types";
 import { EMBEDDING_MODEL, MAX_CONTEXT_CHARS } from "@/app/data/constants";
 import {
   saveDocument,
@@ -9,7 +9,7 @@ import {
   deleteDocument as deleteDocFromDB,
   deleteDocumentsByChatId,
   saveEmbeddings,
-  loadEmbeddingsByChatId,
+  loadAllEmbeddings,
   deleteEmbeddingsByDocumentId,
 } from "@/app/lib/db";
 import { extractText } from "@/app/lib/documents";
@@ -115,18 +115,15 @@ export function useRag(
   );
 
   /**
-   * Retrieve relevant context for a query from document embeddings.
+   * Retrieve relevant context for a query from document and conversation embeddings.
    */
   const getContext = useCallback(
-    async (query: string, chatId: string): Promise<string> => {
+    async (
+      query: string,
+      chatId: string,
+      history: ChatSession[],
+    ): Promise<{ docContext: string; convContext: string }> => {
       try {
-        // Load all embeddings for this chat that belong to documents
-        const allEmbeddings = await loadEmbeddingsByChatId(chatId);
-        const docEmbeddings = allEmbeddings.filter((e) => e.documentId);
-
-        if (docEmbeddings.length === 0) return "";
-
-        // Embed the query
         const engine = await getEmbeddingEngine();
         const response = await engine.embeddings.create({
           input: [query],
@@ -134,26 +131,55 @@ export function useRag(
         });
         const queryVector = response.data[0].embedding;
 
-        // Score and rank
-        const scored = docEmbeddings
+        // Load all embeddings
+        const allEmbeddings = await loadAllEmbeddings();
+        
+        // 1. Document Context (current chat only)
+        const docPool = allEmbeddings.filter(
+          (e) => e.chatId === chatId && e.documentId
+        );
+        const scoredDocs = docPool
           .map((rec) => ({
             text: rec.text,
             score: cosineSimilarity(queryVector, rec.vector),
           }))
           .sort((a, b) => b.score - a.score);
 
-        // Take top chunks until we hit MAX_CONTEXT_CHARS
-        let context = "";
-        for (const chunk of scored) {
-          if (chunk.score < 0.3) break; // minimum relevance threshold
-          if (context.length + chunk.text.length > MAX_CONTEXT_CHARS) break;
-          context += chunk.text + "\n\n";
+        let docContext = "";
+        for (const chunk of scoredDocs) {
+          if (chunk.score < 0.3) break;
+          if (docContext.length + chunk.text.length > MAX_CONTEXT_CHARS) break;
+          docContext += chunk.text + "\n\n";
         }
 
-        return context.trim();
+        // 2. Conversation Context (other chats)
+        const chatMap = new Map(history.map(s => [s.id, s.title]));
+        const convPool = allEmbeddings.filter(
+          (e) => e.chatId !== chatId && !e.documentId
+        );
+        const scoredConvs = convPool
+          .map((rec) => ({
+            text: rec.text,
+            chatTitle: chatMap.get(rec.chatId) || "Other Chat",
+            score: cosineSimilarity(queryVector, rec.vector),
+          }))
+          .sort((a, b) => b.score - a.score);
+
+        let convContext = "";
+        const MAX_CONV_CHARS = 1000; // slightly smaller limit for conversations
+        for (const chunk of scoredConvs) {
+          if (chunk.score < 0.4) break; // stricter threshold for cross-chat context
+          if (convContext.length + chunk.text.length > MAX_CONV_CHARS) break;
+          convContext += `[From: ${chunk.chatTitle}] ${chunk.text}\n\n`;
+        }
+
+        return {
+          docContext: docContext.trim(),
+          convContext: convContext.trim(),
+        };
       } catch (err) {
         console.error("[RAG] Failed to get context:", err);
-        return "";
+        return { docContext: "", convContext: "" };
       }
     },
     [getEmbeddingEngine],
