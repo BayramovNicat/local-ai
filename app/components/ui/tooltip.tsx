@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 
 export function Tooltip({
@@ -17,39 +17,85 @@ export function Tooltip({
   className?: string;
 }) {
   const [isVisible, setIsVisible] = useState(false);
-  const [coords, setCoords] = useState({
-    top: 0,
-    left: 0,
-    width: 0,
-    height: 0,
-  });
+  const [coords, setCoords] = useState({ top: -9999, left: -9999 });
   const triggerRef = useRef<HTMLDivElement>(null);
+  const tooltipRef = useRef<HTMLDivElement>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const updatePosition = () => {
-    if (!triggerRef.current) return;
-    const rect = triggerRef.current.getBoundingClientRect();
-    setCoords({
-      top: rect.top,
-      left: rect.left,
-      width: rect.width,
-      height: rect.height,
+  const updatePosition = useCallback(() => {
+    if (!triggerRef.current || !tooltipRef.current) return;
+
+    const triggerRect = triggerRef.current.getBoundingClientRect();
+    const tooltipRect = tooltipRef.current.getBoundingClientRect();
+    const gap = 8;
+    const padding = 10; // Viewport padding
+
+    let top = 0;
+    let left = 0;
+
+    // Initial position calculation
+    if (position === "top") {
+      top = triggerRect.top - tooltipRect.height - gap;
+      left = triggerRect.left + triggerRect.width / 2 - tooltipRect.width / 2;
+    } else if (position === "bottom") {
+      top = triggerRect.bottom + gap;
+      left = triggerRect.left + triggerRect.width / 2 - tooltipRect.width / 2;
+    } else if (position === "left") {
+      top = triggerRect.top + triggerRect.height / 2 - tooltipRect.height / 2;
+      left = triggerRect.left - tooltipRect.width - gap;
+    } else if (position === "right") {
+      top = triggerRect.top + triggerRect.height / 2 - tooltipRect.height / 2;
+      left = triggerRect.right + gap;
+    }
+
+    // Boundary checks
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+
+    // Horizontal boundary handling
+    if (left < padding) {
+      left = padding;
+    } else if (left + tooltipRect.width > viewportWidth - padding) {
+      left = viewportWidth - tooltipRect.width - padding;
+    }
+
+    // Vertical boundary handling
+    if (top < padding) {
+      // If "top" overflows, try "bottom"
+      if (position === "top") {
+        const bottomAlt = triggerRect.bottom + gap;
+        if (bottomAlt + tooltipRect.height < viewportHeight - padding) {
+          top = bottomAlt;
+        } else {
+          top = padding;
+        }
+      } else {
+        top = padding;
+      }
+    } else if (top + tooltipRect.height > viewportHeight - padding) {
+      // If "bottom" overflows, try "top"
+      if (position === "bottom") {
+        const topAlt = triggerRect.top - tooltipRect.height - gap;
+        if (topAlt > padding) {
+          top = topAlt;
+        } else {
+          top = viewportHeight - tooltipRect.height - padding;
+        }
+      } else {
+        top = viewportHeight - tooltipRect.height - padding;
+      }
+    }
+
+    requestAnimationFrame(() => {
+      setCoords({ top, left });
     });
-  };
+  }, [position]);
 
-  const show = () => {
-    updatePosition();
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    timeoutRef.current = setTimeout(() => {
+  useEffect(() => {
+    if (isVisible) {
       updatePosition();
-      setIsVisible(true);
-    }, 200);
-  };
-
-  const hide = () => {
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    setIsVisible(false);
-  };
+    }
+  }, [isVisible, updatePosition]);
 
   useEffect(() => {
     if (isVisible) {
@@ -60,45 +106,18 @@ export function Tooltip({
       window.removeEventListener("scroll", updatePosition, true);
       window.removeEventListener("resize", updatePosition);
     };
-  }, [isVisible]);
+  }, [isVisible, updatePosition]);
 
-  const getTooltipPosition = () => {
-    const { top, left, width, height } = coords;
-    const gap = 8;
-
-    switch (position) {
-      case "top":
-        return {
-          top: top - gap,
-          left: left + width / 2,
-          transform: "translate(-50%, -100%)",
-        };
-      case "bottom":
-        return {
-          top: top + height + gap,
-          left: left + width / 2,
-          transform: "translateX(-50%)",
-        };
-      case "left":
-        return {
-          top: top + height / 2,
-          left: left - gap,
-          transform: "translate(-100%, -50%)",
-        };
-      case "right":
-        return {
-          top: top + height / 2,
-          left: left + width + gap,
-          transform: "translate(0, -50%)",
-        };
-    }
+  const show = () => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    timeoutRef.current = setTimeout(() => {
+      setIsVisible(true);
+    }, 200);
   };
 
-  const arrowClasses = {
-    top: "top-full left-1/2 -translate-x-1/2 border-t-neutral-800",
-    bottom: "bottom-full left-1/2 -translate-x-1/2 border-b-neutral-800",
-    left: "left-full top-1/2 -translate-y-1/2 border-l-neutral-800",
-    right: "right-full top-1/2 -translate-y-1/2 border-r-neutral-800",
+  const hide = () => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    setIsVisible(false);
   };
 
   return (
@@ -113,8 +132,13 @@ export function Tooltip({
         typeof document !== "undefined" &&
         createPortal(
           <div
+            ref={tooltipRef}
             className="fixed z-9999 px-2.5 py-1.5 rounded-lg bg-[#0a0a0a] border border-neutral-800 shadow-2xl animate-[fadeIn_0.1s_ease-out] pointer-events-none whitespace-nowrap"
-            style={getTooltipPosition()}
+            style={{
+              top: coords.top,
+              left: coords.left,
+              visibility: coords.top === -9999 ? "hidden" : "visible",
+            }}
           >
             <div className="flex items-center gap-2.5 text-[11px] font-medium text-neutral-300">
               {content}
@@ -124,10 +148,6 @@ export function Tooltip({
                 </span>
               )}
             </div>
-            {/* Arrow */}
-            <div
-              className={`absolute border-[5px] border-transparent ${arrowClasses[position]}`}
-            />
           </div>,
           document.body,
         )}
