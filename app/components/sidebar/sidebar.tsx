@@ -2,11 +2,13 @@
 
 import { MessageSquare, Plus, Trash2 } from "lucide-react";
 
+import type { ChatSession } from "@/app/types";
+
 export function Sidebar({
   isOpen,
   accent,
   history,
-  activeChat,
+  activeChatId,
   onNewChat,
   onSelectChat,
   onDeleteChat,
@@ -14,11 +16,11 @@ export function Sidebar({
 }: {
   isOpen: boolean;
   accent: string;
-  history: string[];
-  activeChat: string | null;
+  history: ChatSession[];
+  activeChatId: string | null;
   onNewChat: () => void;
-  onSelectChat: (title: string) => void;
-  onDeleteChat: (index: number) => void;
+  onSelectChat: (id: string) => void;
+  onDeleteChat: (id: string) => void;
   onClose: () => void;
 }) {
   return (
@@ -52,23 +54,23 @@ export function Sidebar({
           <p className="px-2 py-1 text-xs font-medium text-neutral-500 uppercase tracking-wider">
             History
           </p>
-          {history.map((title, i) => (
+          {history.map((session) => (
             <div
-              key={i}
+              key={session.id}
               className={`group flex items-center gap-2 px-3 py-2.5 rounded-lg cursor-pointer transition-colors text-sm border ${
-                activeChat === title
+                activeChatId === session.id
                   ? ""
                   : "border-transparent text-neutral-400 hover:bg-neutral-900 hover:text-neutral-200"
               }`}
-              style={activeChat === title ? { borderColor: `${accent}4D`, color: "#ffffff" } : undefined}
-              onClick={() => onSelectChat(title)}
+              style={activeChatId === session.id ? { borderColor: `${accent}4D`, color: "#ffffff" } : undefined}
+              onClick={() => onSelectChat(session.id)}
             >
               <MessageSquare size={14} className="shrink-0" />
-              <span className="truncate flex-1">{title}</span>
+              <span className="truncate flex-1">{session.title}</span>
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  onDeleteChat(i);
+                  onDeleteChat(session.id);
                 }}
                 className="opacity-0 group-hover:opacity-100 transition-opacity text-neutral-500 hover:text-red-400 cursor-pointer"
               >

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import type { Message, Attachment } from "@/app/types";
+import type { Message, Attachment, ChatSession } from "@/app/types";
 import {
   ACCENT_PRESETS,
   AVAILABLE_MODELS,
@@ -24,8 +24,8 @@ export default function Home() {
   const [isCached, setIsCached] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [downloadProgressText, setDownloadProgressText] = useState("");
-  const [history, setHistory] = useState<string[]>([]);
-  const [activeChat, setActiveChat] = useState<string | null>(null);
+  const [history, setHistory] = useState<ChatSession[]>([]);
+  const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [accentColor, setAccentColor] = useState(ACCENT_PRESETS[0].hex);
   const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
@@ -76,6 +76,16 @@ export default function Home() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  useEffect(() => {
+    if (activeChatId && messages.length > 0) {
+      setHistory((prev) =>
+        prev.map((session) =>
+          session.id === activeChatId ? { ...session, messages } : session
+        )
+      );
+    }
+  }, [messages, activeChatId]);
+
   function handleModelSelect(model: string) {
     if (model !== selectedModel) {
       setSelectedModel(model);
@@ -89,6 +99,19 @@ export default function Home() {
   async function handleSend() {
     const text = input.trim();
     if (!text && attachments.length === 0) return;
+
+    const isFirstMessage = messages.length === 0 && !activeChatId;
+
+    let currentChatId = activeChatId;
+    if (!currentChatId) {
+      currentChatId = Date.now().toString();
+      setActiveChatId(currentChatId);
+      const tempTitle = text.length > 20 ? text.slice(0, 20) + "..." : text;
+      setHistory((prev) => [
+        { id: currentChatId!, title: tempTitle, messages: [] },
+        ...prev,
+      ]);
+    }
 
     const userMsg: Message = {
       id: Date.now().toString(),
@@ -132,6 +155,29 @@ export default function Home() {
           )
         );
       }
+
+      if (isFirstMessage) {
+        try {
+          const titleResponse = await engineRef.current.chat.completions.create({
+            messages: [
+              { role: "user", content: text },
+              { role: "assistant", content: currentText },
+              { role: "user", content: "Generate a short 2-5 word title summarizing this conversation. Reply ONLY with the title itself. No quotation marks, no punctuation, no prefix." }
+            ],
+            stream: false,
+          });
+          
+          let generatedTitle = titleResponse.choices[0]?.message.content?.trim() || "New Chat";
+          generatedTitle = generatedTitle.replace(/^["']|["']$/g, ''); // Remove quotes if LLM added them
+          
+          setHistory((prev) => 
+            prev.map(s => s.id === currentChatId ? { ...s, title: generatedTitle } : s)
+          );
+        } catch (titleErr) {
+          console.error("Title generation failed:", titleErr);
+        }
+      }
+
     } catch (err) {
       console.error(err);
       setMessages((prev) =>
@@ -162,15 +208,25 @@ export default function Home() {
           isOpen={isSidebarOpen}
           accent={accentColor}
           history={history}
-          activeChat={activeChat}
+          activeChatId={activeChatId}
           onNewChat={() => {
             setMessages([]);
-            setActiveChat(null);
+            setActiveChatId(null);
           }}
-          onSelectChat={setActiveChat}
-          onDeleteChat={(i) =>
-            setHistory((prev: string[]) => prev.filter((_: string, idx: number) => idx !== i))
-          }
+          onSelectChat={(id) => {
+            const session = history.find((s) => s.id === id);
+            if (session) {
+              setMessages(session.messages);
+              setActiveChatId(id);
+            }
+          }}
+          onDeleteChat={(id) => {
+            setHistory((prev) => prev.filter((s) => s.id !== id));
+            if (activeChatId === id) {
+              setMessages([]);
+              setActiveChatId(null);
+            }
+          }}
           onClose={() => setIsSidebarOpen(false)}
         />
 

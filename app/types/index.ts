@@ -12,6 +12,12 @@ export interface Message {
   attachments?: Attachment[];
 }
 
+export interface ChatSession {
+  id: string;
+  title: string;
+  messages: Message[];
+}
+
 export interface AccentPreset {
   name: string;
   hex: string;
