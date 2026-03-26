@@ -100,17 +100,18 @@ export default function Home() {
       const isShift = e.shiftKey;
       const key = e.key.toLowerCase();
 
-      // Cmd/Ctrl+K: Search
-      if (isMod && key === "k") {
-        e.preventDefault();
-        initEmbeddingEngine();
-        setIsSearchOpen(true);
-      }
-
-      // Cmd+Shift+O OR Alt+N: New Chat
-      if (isMod && isShift && key === "o") {
-        e.preventDefault();
-        newChat();
+      if (isMod && isShift) {
+        switch (key) {
+          case "k":
+            e.preventDefault();
+            initEmbeddingEngine();
+            setIsSearchOpen((prev) => !prev);
+            break;
+          case "o":
+            e.preventDefault();
+            newChat();
+            break;
+        }
       }
     };
 
