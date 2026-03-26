@@ -14,6 +14,56 @@ import { MessageInput } from "@/app/components/chat/message-input";
 import { DownloadOverlay } from "@/app/components/chat/download-overlay";
 import { CreateMLCEngine, MLCEngine, hasModelInCache } from "@mlc-ai/web-llm";
 
+// Native IndexedDB wrappers to replace idb-keyval
+function saveToDB(key: string, value: unknown): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open("keyval-store");
+    request.onupgradeneeded = (e) => {
+      const db = (e.target as IDBOpenDBRequest).result;
+      if (!db.objectStoreNames.contains("keyval")) db.createObjectStore("keyval");
+    };
+    request.onsuccess = (e) => {
+      const db = (e.target as IDBOpenDBRequest).result;
+      try {
+        const tx = db.transaction("keyval", "readwrite");
+        const store = tx.objectStore("keyval");
+        const putReq = store.put(value, key);
+        putReq.onsuccess = () => resolve();
+        putReq.onerror = () => reject(putReq.error);
+      } catch (err) {
+        reject(err);
+      }
+    };
+    request.onerror = () => reject(request.error); 
+  });
+}
+
+function loadFromDB<T>(key: string): Promise<T | undefined> {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open("keyval-store");
+    request.onupgradeneeded = (e) => {
+      const db = (e.target as IDBOpenDBRequest).result;
+      if (!db.objectStoreNames.contains("keyval")) db.createObjectStore("keyval");
+    };
+    request.onsuccess = (e) => {
+      const db = (e.target as IDBOpenDBRequest).result;
+      if (!db.objectStoreNames.contains("keyval")) {
+        return resolve(undefined);
+      }
+      try {
+        const tx = db.transaction("keyval", "readonly");
+        const store = tx.objectStore("keyval");
+        const getReq = store.get(key);
+        getReq.onsuccess = () => resolve(getReq.result);
+        getReq.onerror = () => reject(getReq.error);
+      } catch (err) {
+        reject(err);
+      }
+    };
+    request.onerror = () => reject(request.error);
+  });
+}
+
 export default function Home() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -26,6 +76,7 @@ export default function Home() {
   const [downloadProgressText, setDownloadProgressText] = useState("");
   const [history, setHistory] = useState<ChatSession[]>([]);
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
+  const [isHistoryLoaded, setIsHistoryLoaded] = useState(false);
   const [accentColor, setAccentColor] = useState(ACCENT_PRESETS[0].hex);
   const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
@@ -85,6 +136,26 @@ export default function Home() {
       );
     }
   }, [messages, activeChatId]);
+
+  useEffect(() => {
+    loadFromDB<ChatSession[]>('chat-history')
+      .then((val) => {
+        if (val && Array.isArray(val) && val.length > 0) {
+          setHistory(val);
+        }
+        setIsHistoryLoaded(true);
+      })
+      .catch((err) => {
+        console.error("Failed to load history:", err);
+        setIsHistoryLoaded(true);
+      });
+  }, []);
+
+  useEffect(() => {
+    if (isHistoryLoaded) {
+      saveToDB('chat-history', history).catch(err => console.error("Failed to save history:", err));
+    }
+  }, [history, isHistoryLoaded]);
 
   function handleModelSelect(model: string) {
     if (model !== selectedModel) {
