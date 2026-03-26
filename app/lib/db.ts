@@ -117,34 +117,6 @@ export async function loadAllEmbeddings(): Promise<EmbeddingRecord[]> {
   });
 }
 
-export async function loadEmbeddingsByDocumentId(
-  documentId: string,
-): Promise<EmbeddingRecord[]> {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE_EMBEDDINGS, "readonly");
-    const store = tx.objectStore(STORE_EMBEDDINGS);
-    const index = store.index("documentId");
-    const req = index.getAll(IDBKeyRange.only(documentId));
-    req.onsuccess = () => resolve(req.result ?? []);
-    req.onerror = () => reject(req.error);
-  });
-}
-
-export async function loadEmbeddingsByChatId(
-  chatId: string,
-): Promise<EmbeddingRecord[]> {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE_EMBEDDINGS, "readonly");
-    const store = tx.objectStore(STORE_EMBEDDINGS);
-    const index = store.index("chatId");
-    const req = index.getAll(IDBKeyRange.only(chatId));
-    req.onsuccess = () => resolve(req.result ?? []);
-    req.onerror = () => reject(req.error);
-  });
-}
-
 export async function deleteEmbeddingsByChatId(
   chatId: string,
 ): Promise<void> {

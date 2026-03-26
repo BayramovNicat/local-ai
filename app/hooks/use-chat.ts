@@ -244,10 +244,7 @@ export function useChat(
           }
           updateHistory(
             currentChatId,
-            messagesRef.current.concat(userMsg, {
-              ...assistantMsg,
-              content: currentText,
-            }),
+            messagesRef.current,
             title.replace(/^["']|["']$/g, ""),
           );
         } catch (e) {

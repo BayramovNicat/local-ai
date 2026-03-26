@@ -25,12 +25,17 @@ export function useEmbeddings() {
     if (embeddingPromiseRef.current) return embeddingPromiseRef.current;
 
     if (isInitializingRef.current) {
-      // Wait for existing initialization
-      return new Promise((resolve) => {
+      // Wait for existing initialization (bail after 60s to prevent leak)
+      return new Promise((resolve, reject) => {
+        let elapsed = 0;
         const interval = setInterval(() => {
+          elapsed += 100;
           if (embeddingEngineRef.current) {
             clearInterval(interval);
             resolve(embeddingEngineRef.current);
+          } else if (!isInitializingRef.current || elapsed >= 60_000) {
+            clearInterval(interval);
+            reject(new Error("Embedding engine initialization failed"));
           }
         }, 100);
       });
