@@ -39,6 +39,8 @@ export default function Home() {
     selectChat,
     deleteChat,
     editMessage,
+    isStreaming,
+    stopGenerating,
   } = useChat(waitForEngine);
 
   const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
@@ -119,7 +121,9 @@ export default function Home() {
           attachments={attachments}
           setAttachments={setAttachments}
           accent={accentColor}
+          isStreaming={isStreaming}
           onSend={handleSend}
+          onStop={stopGenerating}
         />
       </div>
     </div>

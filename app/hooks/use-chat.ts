@@ -1,11 +1,13 @@
 "use client";
 
-import { loadFromDB, saveToDB } from "@/app/lib/db";
+import {
+  deleteChat as deleteChatFromDB,
+  loadAllChats,
+  saveChat as saveChatToDB,
+} from "@/app/lib/db";
 import type { Attachment, ChatSession, Message } from "@/app/types";
 import type { MLCEngineInterface } from "@mlc-ai/web-llm";
 import { useCallback, useEffect, useRef, useState } from "react";
-
-const HISTORY_DB_KEY = "chat-history";
 
 export function useChat(waitForEngine: () => Promise<MLCEngineInterface>) {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -26,7 +28,21 @@ export function useChat(waitForEngine: () => Promise<MLCEngineInterface>) {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Sync messages to history whenever messages change, using a flush before persist
+  // Persist a single chat session to IndexedDB
+  const persistChat = useCallback((chatId: string, msgs: Message[]) => {
+    setHistory((prev) => {
+      const session = prev.find((s) => s.id === chatId);
+      if (session) {
+        const updated = { ...session, messages: msgs };
+        saveChatToDB(updated).catch((err) =>
+          console.error("Failed to save chat:", err),
+        );
+      }
+      return prev;
+    });
+  }, []);
+
+  // Sync messages to history whenever messages change
   const syncHistoryWithMessages = useCallback(() => {
     const chatId = activeChatIdRef.current;
     const msgs = messagesRef.current;
@@ -34,14 +50,19 @@ export function useChat(waitForEngine: () => Promise<MLCEngineInterface>) {
       setHistory((prev) =>
         prev.map((s) => (s.id === chatId ? { ...s, messages: msgs } : s)),
       );
+      persistChat(chatId, msgs);
     }
-  }, []);
+  }, [persistChat]);
 
   // Load history from IndexedDB
   useEffect(() => {
-    loadFromDB<ChatSession[]>(HISTORY_DB_KEY)
-      .then((val) => {
-        if (val && Array.isArray(val) && val.length > 0) setHistory(val);
+    loadAllChats()
+      .then((chats) => {
+        if (chats.length > 0) {
+          // Sort by id (timestamp) descending so newest first
+          chats.sort((a, b) => (b.id > a.id ? 1 : -1));
+          setHistory(chats);
+        }
         setIsHistoryLoaded(true);
       })
       .catch((err) => {
@@ -49,17 +70,6 @@ export function useChat(waitForEngine: () => Promise<MLCEngineInterface>) {
         setIsHistoryLoaded(true);
       });
   }, []);
-
-  // Persist history to IndexedDB (skip during streaming to avoid thrashing)
-  useEffect(() => {
-    if (!isHistoryLoaded || isStreaming) return;
-    const id = setTimeout(() => {
-      saveToDB(HISTORY_DB_KEY, history).catch((err) =>
-        console.error("Failed to save history:", err),
-      );
-    }, 500);
-    return () => clearTimeout(id);
-  }, [history, isHistoryLoaded, isStreaming]);
 
   const handleSend = useCallback(async () => {
     const text = input.trim();
@@ -72,10 +82,16 @@ export function useChat(waitForEngine: () => Promise<MLCEngineInterface>) {
       currentChatId = Date.now().toString();
       setActiveChatId(currentChatId);
       const tempTitle = text.length > 20 ? text.slice(0, 20) + "..." : text;
-      setHistory((prev) => [
-        { id: currentChatId!, title: tempTitle, messages: [] },
-        ...prev,
-      ]);
+      const newSession: ChatSession = {
+        id: currentChatId,
+        title: tempTitle,
+        messages: [],
+      };
+      setHistory((prev) => [newSession, ...prev]);
+      // Persist the new session immediately
+      saveChatToDB(newSession).catch((err) =>
+        console.error("Failed to save new chat:", err),
+      );
     }
 
     const userMsg: Message = {
@@ -139,11 +155,18 @@ export function useChat(waitForEngine: () => Promise<MLCEngineInterface>) {
             titleResponse.choices[0]?.message.content?.trim() || "New Chat";
           generatedTitle = generatedTitle.replace(/^["']|["']$/g, "");
 
-          setHistory((prev) =>
-            prev.map((s) =>
+          setHistory((prev) => {
+            const updated = prev.map((s) =>
               s.id === currentChatId ? { ...s, title: generatedTitle } : s,
-            ),
-          );
+            );
+            const session = updated.find((s) => s.id === currentChatId);
+            if (session) {
+              saveChatToDB(session).catch((err) =>
+                console.error("Failed to save title:", err),
+              );
+            }
+            return updated;
+          });
         } catch (titleErr) {
           console.error("Title generation failed:", titleErr);
         }
@@ -170,6 +193,15 @@ export function useChat(waitForEngine: () => Promise<MLCEngineInterface>) {
     syncHistoryWithMessages,
   ]);
 
+  const stopGenerating = useCallback(async () => {
+    try {
+      const engine = await waitForEngine();
+      engine.interruptGenerate();
+    } catch (err) {
+      console.error("Failed to stop generation:", err);
+    }
+  }, [waitForEngine]);
+
   const newChat = useCallback(() => {
     setMessages([]);
     setActiveChatId(null);
@@ -189,6 +221,9 @@ export function useChat(waitForEngine: () => Promise<MLCEngineInterface>) {
   const deleteChat = useCallback(
     (id: string) => {
       setHistory((prev) => prev.filter((s) => s.id !== id));
+      deleteChatFromDB(id).catch((err) =>
+        console.error("Failed to delete chat:", err),
+      );
       if (activeChatId === id) {
         setMessages([]);
         setActiveChatId(null);
@@ -219,5 +254,8 @@ export function useChat(waitForEngine: () => Promise<MLCEngineInterface>) {
     selectChat,
     deleteChat,
     editMessage,
+    isStreaming,
+    isHistoryLoaded,
+    stopGenerating,
   };
 }

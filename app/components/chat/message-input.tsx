@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef } from "react";
-import { Send, Paperclip, X } from "lucide-react";
+import { Send, Paperclip, X, Square } from "lucide-react";
 import type { Attachment } from "@/app/types";
 import { processFiles, processPasteItems } from "@/app/hooks/use-file-handler";
 
@@ -11,14 +11,18 @@ export function MessageInput({
   attachments,
   setAttachments,
   accent,
+  isStreaming,
   onSend,
+  onStop,
 }: {
   input: string;
   setInput: (v: string) => void;
   attachments: Attachment[];
   setAttachments: React.Dispatch<React.SetStateAction<Attachment[]>>;
   accent: string;
+  isStreaming: boolean;
   onSend: () => void;
+  onStop: () => void;
 }) {
   const editorRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -113,26 +117,38 @@ export function MessageInput({
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
-                  onSend();
-                  if (editorRef.current) editorRef.current.textContent = "";
+                  if (!isStreaming) {
+                    onSend();
+                    if (editorRef.current) editorRef.current.textContent = "";
+                  }
                 }
               }}
             />
-            <button
-              onClick={() => {
-                onSend();
-                if (editorRef.current) editorRef.current.textContent = "";
-              }}
-              disabled={!hasContent}
-              className={`shrink-0 p-2 rounded-lg transition-all cursor-pointer ${
-                hasContent
-                  ? "text-black"
-                  : "text-neutral-600 cursor-not-allowed"
-              }`}
-              style={hasContent ? { backgroundColor: accent } : undefined}
-            >
-              <Send size={18} />
-            </button>
+            {isStreaming ? (
+              <button
+                onClick={onStop}
+                className="shrink-0 p-2 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-800 transition-all cursor-pointer"
+                title="Stop generation"
+              >
+                <Square size={18} fill="currentColor" />
+              </button>
+            ) : (
+              <button
+                onClick={() => {
+                  onSend();
+                  if (editorRef.current) editorRef.current.textContent = "";
+                }}
+                disabled={!hasContent}
+                className={`shrink-0 p-2 rounded-lg transition-all cursor-pointer ${
+                  hasContent
+                    ? "text-black"
+                    : "text-neutral-600 cursor-not-allowed"
+                }`}
+                style={hasContent ? { backgroundColor: accent } : undefined}
+              >
+                <Send size={18} />
+              </button>
+            )}
           </div>
         </div>
       </div>
