@@ -6,6 +6,7 @@ import { Pencil } from "lucide-react";
 import type { Message } from "@/app/types";
 import { CopyButton } from "@/app/components/ui/copy-button";
 import { CodeBlock } from "./code-block";
+import { LoadingDots } from "./loading-dots";
 
 export function ChatMessage({
   message,
@@ -42,6 +43,8 @@ export function ChatMessage({
           )}
           {isUser ? (
             <p className="text-sm leading-relaxed">{message.content}</p>
+          ) : message.content === "" ? (
+            <LoadingDots />
           ) : (
             <div className="prose-chat text-sm">
               <ReactMarkdown
