@@ -1,26 +1,165 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+:root {
+  --bg: #0a0a0a;
+  --bg-subtle: #121212;
+  --bg-muted: #1a1a1a;
+  --text: #e5e5e5;
+  --text-secondary: #d4d4d4;
+  --text-muted: #a3a3a3;
+  --text-bright: #f5f5f5;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Markdown prose overrides */
+.prose-chat {
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+
+.prose-chat h1,
+.prose-chat h2,
+.prose-chat h3,
+.prose-chat h4 {
+  color: var(--text-bright);
+  font-weight: 600;
+  margin-top: 1.25em;
+  margin-bottom: 0.5em;
+}
+
+.prose-chat h1 { font-size: 1.5em; }
+.prose-chat h2 { font-size: 1.25em; }
+.prose-chat h3 { font-size: 1.1em; }
+
+.prose-chat p {
+  margin: 0.5em 0;
+}
+
+.prose-chat strong {
+  color: var(--text-bright);
+  font-weight: 700;
+}
+
+.prose-chat em {
+  color: var(--text-muted);
+}
+
+.prose-chat ul,
+.prose-chat ol {
+  margin: 0.5em 0;
+  padding-left: 1.5em;
+}
+
+.prose-chat li {
+  margin: 0.25em 0;
+}
+
+.prose-chat ul li {
+  list-style-type: disc;
+}
+
+.prose-chat ol li {
+  list-style-type: decimal;
+}
+
+.prose-chat code:not(pre code) {
+  background: var(--bg-muted);
+  color: var(--accent, #22C55E);
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+  font-size: 0.875em;
+  font-family: var(--font-mono), monospace;
+}
+
+.prose-chat pre {
+  background: var(--bg-subtle);
+  border-radius: 8px;
+  padding: 1em;
+  margin: 0.75em 0;
+  overflow-x: auto;
+}
+
+.prose-chat pre code {
+  background: none;
+  color: var(--text-secondary);
+  padding: 0;
+  font-size: 0.85em;
+  font-family: var(--font-mono), monospace;
+}
+
+.prose-chat a {
+  color: var(--accent, #22C55E);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.prose-chat blockquote {
+  padding-left: 1em;
+  margin: 0.75em 0;
+  color: var(--text-muted);
+}
+
+.prose-chat hr {
+  margin: 1em 0;
+}
+
+.prose-chat table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.75em 0;
+}
+
+.prose-chat th,
+.prose-chat td {
+  padding: 0.5em 0.75em;
+  text-align: left;
+}
+
+.prose-chat th {
+  background: var(--bg-muted);
+  color: var(--text-bright);
+  font-weight: 600;
+}
+
+/* Neon glow for progress bar */
+@keyframes neon-pulse {
+  0%, 100% { box-shadow: 0 0 8px var(--accent, #22C55E), 0 0 16px color-mix(in srgb, var(--accent, #22C55E) 40%, transparent); }
+  50% { box-shadow: 0 0 16px var(--accent, #22C55E), 0 0 32px color-mix(in srgb, var(--accent, #22C55E) 40%, transparent); }
+}
+
+.neon-glow {
+  animation: neon-pulse 2s ease-in-out infinite;
+}
+
+/* Spinner */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+.spinner {
+  animation: spin 1s linear infinite;
 }
