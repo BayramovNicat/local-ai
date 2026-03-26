@@ -26,7 +26,9 @@ export function SearchModal({
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [hasSearched, setHasSearched] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Focus input when modal opens
@@ -41,19 +43,64 @@ export function SearchModal({
     }
   }, [isOpen]);
 
-  // Close on Escape
+  // Close on Escape and handle Arrow Keys
   useEffect(() => {
     if (!isOpen) return;
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
+      if (results.length === 0) return;
+
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setSelectedIndex((prev) => (prev < results.length - 1 ? prev + 1 : 0));
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setSelectedIndex((prev) => (prev > 0 ? prev - 1 : results.length - 1));
+      } else if (
+        e.key === "Enter" &&
+        selectedIndex >= 0 &&
+        results[selectedIndex]
+      ) {
+        e.preventDefault();
+        onSelectResult(results[selectedIndex].chatId);
+        onClose();
+      }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, results, selectedIndex, onSelectResult]);
+
+  // Scroll selected item into view
+  useEffect(() => {
+    if (
+      selectedIndex >= 0 &&
+      results.length > 0 &&
+      scrollContainerRef.current
+    ) {
+      const container = scrollContainerRef.current;
+      const selectedItem = container.children[selectedIndex] as HTMLElement;
+      if (selectedItem) {
+        const itemTop = selectedItem.offsetTop;
+        const itemBottom = itemTop + selectedItem.offsetHeight;
+        const containerTop = container.scrollTop;
+        const containerBottom = containerTop + container.offsetHeight;
+
+        if (itemTop < containerTop) {
+          container.scrollTo({ top: itemTop - 8, behavior: "smooth" });
+        } else if (itemBottom > containerBottom) {
+          container.scrollTo({
+            top: itemBottom - container.offsetHeight + 8,
+            behavior: "smooth",
+          });
+        }
+      }
+    }
+  }, [selectedIndex, results.length]);
 
   const handleSearch = useCallback(
     (value: string) => {
       setQuery(value);
+      setSelectedIndex(0);
       if (debounceRef.current) clearTimeout(debounceRef.current);
 
       if (!value.trim()) {
@@ -65,6 +112,7 @@ export function SearchModal({
       debounceRef.current = setTimeout(async () => {
         const res = await onSearch(value);
         setResults(res);
+        setSelectedIndex(0);
         setHasSearched(true);
       }, 300);
     },
@@ -94,7 +142,11 @@ export function SearchModal({
             className="flex-1 bg-transparent border-none outline-none text-neutral-200 text-sm placeholder:text-neutral-500"
           />
           {isSearching && (
-            <Loader2 size={16} className="shrink-0 spinner" style={{ color: accent }} />
+            <Loader2
+              size={16}
+              className="shrink-0 spinner"
+              style={{ color: accent }}
+            />
           )}
           <button
             onClick={onClose}
@@ -117,7 +169,10 @@ export function SearchModal({
         )}
 
         {/* Results */}
-        <div className="flex-1 overflow-y-auto p-2 min-h-40">
+        <div
+          ref={scrollContainerRef}
+          className="flex-1 overflow-y-auto p-2 min-h-40 relative"
+        >
           {/* Empty state — initial */}
           {!hasSearched && !query.trim() && (
             <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
@@ -146,11 +201,16 @@ export function SearchModal({
           {results.map((result, idx) => (
             <button
               key={`${result.messageId}-${idx}`}
-              className="w-full text-left px-4 py-3 rounded-xl border border-transparent hover:bg-neutral-900 hover:border-neutral-800 transition-colors cursor-pointer mb-1"
+              className={`w-full text-left px-4 py-3 rounded-xl border border-transparent transition-all cursor-pointer mb-1 ${
+                selectedIndex === idx
+                  ? "bg-white/5 border-white/5"
+                  : "hover:bg-white/3"
+              }`}
               onClick={() => {
                 onSelectResult(result.chatId);
                 onClose();
               }}
+              onMouseEnter={() => setSelectedIndex(idx)}
             >
               <div className="flex items-center justify-between mb-1.5">
                 <span className="flex items-center gap-1.5 text-xs font-medium text-neutral-500">
@@ -174,7 +234,13 @@ export function SearchModal({
                   </span>
                 </div>
               </div>
-              <p className="text-xs leading-relaxed text-neutral-300 line-clamp-3">
+              <p
+                className={`text-xs leading-relaxed line-clamp-3 transition-colors ${
+                  selectedIndex === idx
+                    ? "text-neutral-200"
+                    : "text-neutral-400"
+                }`}
+              >
                 {result.text}
               </p>
             </button>
