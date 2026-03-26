@@ -6,6 +6,7 @@ import { useEngine } from "@/app/hooks/use-engine";
 import { usePreferences } from "@/app/hooks/use-preferences";
 import { useChat } from "@/app/hooks/use-chat";
 import { useEmbeddings } from "@/app/hooks/use-embeddings";
+import { useRag } from "@/app/hooks/use-rag";
 import { Sidebar } from "@/app/components/sidebar/sidebar";
 import { Header } from "@/app/components/header/header";
 import { ChatMessage } from "@/app/components/chat/chat-message";
@@ -13,6 +14,9 @@ import { EmptyState } from "@/app/components/chat/empty-state";
 import { MessageInput } from "@/app/components/chat/message-input";
 import { LoadingBanner } from "@/app/components/chat/loading-banner";
 import { SearchModal } from "@/app/components/search/search-modal";
+import { DocumentPanel } from "@/app/components/chat/document-panel";
+import { processFiles } from "@/app/hooks/use-file-handler";
+import { SUPPORTED_DOC_TYPES } from "@/app/data/constants";
 
 export default function Home() {
   const {
@@ -28,6 +32,27 @@ export default function Home() {
     useEngine(selectedModel);
 
   const {
+    isEmbeddingReady,
+    isIndexing,
+    isSearching,
+    initEmbeddingEngine,
+    getEmbeddingEngine,
+    embedMessages,
+    search,
+    cleanupEmbeddings,
+  } = useEmbeddings();
+
+  const {
+    documents,
+    isUploading,
+    loadDocuments,
+    uploadDocument,
+    getContext,
+    removeDocument,
+    cleanupDocuments,
+  } = useRag(getEmbeddingEngine, initEmbeddingEngine);
+
+  const {
     messages,
     input,
     setInput,
@@ -40,24 +65,20 @@ export default function Home() {
     newChat,
     selectChat,
     deleteChat: deleteChatOriginal,
+    createChat,
     editMessage,
     isStreaming,
     stopGenerating,
-  } = useChat(waitForEngine);
-
-  const {
-    isEmbeddingReady,
-    isIndexing,
-    isSearching,
-    initEmbeddingEngine,
-    embedMessages,
-    search,
-    cleanupEmbeddings,
-  } = useEmbeddings();
+  } = useChat(waitForEngine, getContext);
 
   const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
   const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+
+  // Load documents when active chat changes
+  useEffect(() => {
+    loadDocuments(activeChatId || "");
+  }, [activeChatId, loadDocuments]);
 
   // Auto-embed messages after streaming completes
   useEffect(() => {
@@ -81,14 +102,16 @@ export default function Home() {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleDeleteChat = useCallback(
     (id: string) => {
       deleteChatOriginal(id);
       cleanupEmbeddings(id);
+      cleanupDocuments(id);
     },
-    [deleteChatOriginal, cleanupEmbeddings],
+    [deleteChatOriginal, cleanupEmbeddings, cleanupDocuments],
   );
 
   const handleSearchSelect = useCallback(
@@ -102,6 +125,43 @@ export default function Home() {
   const handleSearch = useCallback(
     (query: string) => search(query, history),
     [search, history],
+  );
+
+  const handleUpload = useCallback(
+    async (files: File[]) => {
+      let chatId = activeChatId;
+      if (!chatId) {
+        chatId = await createChat();
+      }
+
+      const imageFiles: File[] = [];
+      const docFiles: File[] = [];
+
+      const docExts = SUPPORTED_DOC_TYPES.split(",").map((ext) =>
+        ext.trim().toLowerCase(),
+      );
+
+      for (const file of files) {
+        const ext = `.${file.name.split(".").pop()?.toLowerCase()}`;
+        if (file.type.startsWith("image/")) {
+          imageFiles.push(file);
+        } else if (docExts.includes(ext)) {
+          docFiles.push(file);
+        }
+      }
+
+      // Handle images
+      if (imageFiles.length > 0) {
+        const newAtts = await processFiles(imageFiles);
+        setAttachments((prev) => [...prev, ...newAtts]);
+      }
+
+      // Handle documents (sequential upload for safety)
+      for (const doc of docFiles) {
+        uploadDocument(doc, chatId);
+      }
+    },
+    [activeChatId, createChat, uploadDocument, setAttachments],
   );
 
   function handleModelSelect(model: string) {
@@ -177,16 +237,25 @@ export default function Home() {
           <div ref={messagesEndRef} />
         </main>
 
-        <MessageInput
-          input={input}
-          setInput={setInput}
-          attachments={attachments}
-          setAttachments={setAttachments}
-          accent={accentColor}
-          isStreaming={isStreaming}
-          onSend={handleSend}
-          onStop={stopGenerating}
-        />
+        <div className="absolute bottom-0 left-0 right-0 z-10">
+          <DocumentPanel
+            documents={documents}
+            isUploading={isUploading}
+            accent={accentColor}
+            onRemove={removeDocument}
+          />
+          <MessageInput
+            input={input}
+            setInput={setInput}
+            attachments={attachments}
+            setAttachments={setAttachments}
+            accent={accentColor}
+            isStreaming={isStreaming}
+            onSend={handleSend}
+            onStop={stopGenerating}
+            onUpload={handleUpload}
+          />
+        </div>
       </div>
 
       <SearchModal

@@ -3,7 +3,7 @@
 import { useRef } from "react";
 import { Send, Paperclip, X, Square } from "lucide-react";
 import type { Attachment } from "@/app/types";
-import { processFiles, processPasteItems } from "@/app/hooks/use-file-handler";
+import { SUPPORTED_DOC_TYPES } from "@/app/data/constants";
 
 export function MessageInput({
   input,
@@ -14,6 +14,7 @@ export function MessageInput({
   isStreaming,
   onSend,
   onStop,
+  onUpload,
 }: {
   input: string;
   setInput: (v: string) => void;
@@ -23,13 +24,14 @@ export function MessageInput({
   isStreaming: boolean;
   onSend: () => void;
   onStop: () => void;
+  onUpload: (files: File[]) => void;
 }) {
   const editorRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const hasContent = input.trim() || attachments.length > 0;
 
   return (
-    <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4 bg-[#0a0a0a]/40 backdrop-blur-md z-10">
+    <div className="p-3 sm:p-4 bg-[#0a0a0a]/40 backdrop-blur-md">
       <div className="max-w-3xl mx-auto">
         <div
           className="rounded-xl border border-neutral-700 transition-colors"
@@ -63,6 +65,7 @@ export function MessageInput({
             <button
               onClick={() => fileInputRef.current?.click()}
               className="shrink-0 p-2 rounded-lg text-neutral-500 hover:text-neutral-300 transition-colors cursor-pointer"
+              title="Attach files (images, .txt, .md, .pdf)"
             >
               <Paperclip size={18} />
             </button>
@@ -71,13 +74,12 @@ export function MessageInput({
               id="file-upload"
               name="file-upload"
               type="file"
-              accept="image/*"
+              accept={`image/*,${SUPPORTED_DOC_TYPES}`}
               multiple
               className="hidden"
-              onChange={async (e) => {
+              onChange={(e) => {
                 if (!e.target.files) return;
-                const newAtts = await processFiles(e.target.files);
-                setAttachments((prev) => [...prev, ...newAtts]);
+                onUpload(Array.from(e.target.files));
                 e.target.value = "";
               }}
             />
@@ -94,13 +96,17 @@ export function MessageInput({
                 const items = e.clipboardData?.items;
                 if (!items) return;
 
-                const hasImage = Array.from(items).some((i) =>
-                  i.type.startsWith("image/"),
+                const hasFiles = Array.from(items).some(
+                  (i) => i.kind === "file",
                 );
-                if (hasImage) {
+                if (hasFiles) {
                   e.preventDefault();
-                  const newAtts = await processPasteItems(items);
-                  setAttachments((prev) => [...prev, ...newAtts]);
+                  const files: File[] = [];
+                  for (const item of Array.from(items)) {
+                    const file = item.getAsFile();
+                    if (file) files.push(file);
+                  }
+                  if (files.length > 0) onUpload(files);
                 } else {
                   e.preventDefault();
                   const text = e.clipboardData.getData("text/plain");
@@ -110,8 +116,7 @@ export function MessageInput({
               onDrop={async (e) => {
                 e.preventDefault();
                 if (!e.dataTransfer?.files) return;
-                const newAtts = await processFiles(e.dataTransfer.files);
-                setAttachments((prev) => [...prev, ...newAtts]);
+                onUpload(Array.from(e.dataTransfer.files));
               }}
               onDragOver={(e) => e.preventDefault()}
               onKeyDown={(e) => {

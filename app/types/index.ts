@@ -27,6 +27,7 @@ export interface EmbeddingRecord {
   id: string;
   chatId: string;
   messageId: string;
+  documentId?: string;
   text: string;
   vector: number[];
   timestamp: number;
@@ -39,4 +40,13 @@ export interface SearchResult {
   text: string;
   score: number;
   role: "user" | "assistant";
+}
+
+export interface Document {
+  id: string;
+  name: string;
+  type: string;
+  size: number;
+  chatId: string;
+  createdAt: number;
 }

@@ -9,7 +9,10 @@ import type { Attachment, ChatSession, Message } from "@/app/types";
 import type { MLCEngineInterface } from "@mlc-ai/web-llm";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-export function useChat(waitForEngine: () => Promise<MLCEngineInterface>) {
+export function useChat(
+  waitForEngine: () => Promise<MLCEngineInterface>,
+  getContext?: (query: string, chatId: string) => Promise<string>,
+) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [attachments, setAttachments] = useState<Attachment[]>([]);
@@ -71,27 +74,41 @@ export function useChat(waitForEngine: () => Promise<MLCEngineInterface>) {
       });
   }, []);
 
+  const createChat = useCallback(async (title?: string) => {
+    const id = Date.now().toString();
+    const chatTitle = title
+      ? title.length > 20
+        ? title.slice(0, 20) + "..."
+        : title
+      : "New Chat";
+
+    const newSession: ChatSession = {
+      id,
+      title: chatTitle,
+      messages: [],
+    };
+
+    setHistory((prev) => [newSession, ...prev]);
+    setActiveChatId(id);
+
+    try {
+      await saveChatToDB(newSession);
+    } catch (err) {
+      console.error("Failed to save new chat:", err);
+    }
+
+    return id;
+  }, []);
+
   const handleSend = useCallback(async () => {
     const text = input.trim();
     if (!text && attachments.length === 0) return;
 
-    const isFirstMessage = messages.length === 0 && !activeChatId;
+    const isFirstMessage = messages.length === 0;
 
     let currentChatId = activeChatId;
     if (!currentChatId) {
-      currentChatId = Date.now().toString();
-      setActiveChatId(currentChatId);
-      const tempTitle = text.length > 20 ? text.slice(0, 20) + "..." : text;
-      const newSession: ChatSession = {
-        id: currentChatId,
-        title: tempTitle,
-        messages: [],
-      };
-      setHistory((prev) => [newSession, ...prev]);
-      // Persist the new session immediately
-      saveChatToDB(newSession).catch((err) =>
-        console.error("Failed to save new chat:", err),
-      );
+      currentChatId = await createChat(text);
     }
 
     const userMsg: Message = {
@@ -116,10 +133,31 @@ export function useChat(waitForEngine: () => Promise<MLCEngineInterface>) {
     try {
       const engine = await waitForEngine();
 
-      const engineMsgs = messages.concat(userMsg).map((m) => ({
-        role: m.role,
-        content: m.content,
-      }));
+      // Retrieve RAG context if documents are attached
+      let ragContext = "";
+      if (getContext && currentChatId) {
+        ragContext = await getContext(text, currentChatId);
+      }
+
+      const engineMsgs: Array<{
+        role: "system" | "user" | "assistant";
+        content: string;
+      }> = [];
+
+      // Inject RAG context as system message
+      if (ragContext) {
+        engineMsgs.push({
+          role: "system" as const,
+          content: `Use the following document context to answer the user's question. If the context is not relevant, ignore it and answer normally.\n\n${ragContext}`,
+        });
+      }
+
+      engineMsgs.push(
+        ...messages.concat(userMsg).map((m) => ({
+          role: m.role as "user" | "assistant",
+          content: m.content,
+        })),
+      );
 
       const chunks = await engine.chat.completions.create({
         messages: engineMsgs,
@@ -140,19 +178,34 @@ export function useChat(waitForEngine: () => Promise<MLCEngineInterface>) {
         try {
           const titleResponse = await engine.chat.completions.create({
             messages: [
+              {
+                role: "system",
+                content:
+                  "You are a helpful assistant that generates short, concise titles for chat conversations.",
+              },
               { role: "user", content: text },
               { role: "assistant", content: currentText },
               {
                 role: "user",
                 content:
-                  "Generate a short 2-5 word title summarizing this conversation. Reply ONLY with the title itself. No quotation marks, no punctuation, no prefix.",
+                  "Generate a 2-5 word title for this conversation. Output ONLY the title, no extra words, symbols, or phrases like 'Title:' or 'The title is:'. Avoid generic terms like 'AI Assistant' or 'Helpful Chat'.",
               },
             ],
             stream: false,
           });
 
           let generatedTitle =
-            titleResponse.choices[0]?.message.content?.trim() || "New Chat";
+            titleResponse.choices[0]?.message.content?.trim() || "";
+
+          // Filter out generic AI-generated filler titles
+          const genericTerms = ["ai assistant", "helpful assistant", "untitled chat", "chat with ai", "the title is"];
+          const lowerTitle = generatedTitle.toLowerCase();
+          const isGeneric = !generatedTitle || genericTerms.some(term => lowerTitle.includes(term)) || generatedTitle.length > 50;
+
+          if (isGeneric) {
+            generatedTitle = text.length > 25 ? text.slice(0, 25) + "..." : text;
+          }
+
           generatedTitle = generatedTitle.replace(/^["']|["']$/g, "");
 
           setHistory((prev) => {
@@ -190,6 +243,8 @@ export function useChat(waitForEngine: () => Promise<MLCEngineInterface>) {
     messages,
     activeChatId,
     waitForEngine,
+    getContext,
+    createChat,
     syncHistoryWithMessages,
   ]);
 
@@ -204,6 +259,7 @@ export function useChat(waitForEngine: () => Promise<MLCEngineInterface>) {
 
   const newChat = useCallback(() => {
     setMessages([]);
+    setAttachments([]);
     setActiveChatId(null);
   }, []);
 
@@ -251,6 +307,7 @@ export function useChat(waitForEngine: () => Promise<MLCEngineInterface>) {
     messagesEndRef,
     handleSend,
     newChat,
+    createChat,
     selectChat,
     deleteChat,
     editMessage,

@@ -186,6 +186,7 @@ export function useEmbeddings() {
     isIndexing,
     isSearching,
     initEmbeddingEngine,
+    getEmbeddingEngine,
     embedMessages,
     search,
     cleanupEmbeddings,
