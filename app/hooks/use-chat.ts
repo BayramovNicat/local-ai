@@ -40,13 +40,15 @@ export function useChat(
     if (!container) return;
 
     const handleScroll = () => {
-      isAtBottomRef.current = 
-        container.scrollHeight - container.scrollTop - container.clientHeight < 50;
+      isAtBottomRef.current =
+        container.scrollHeight - container.scrollTop - container.clientHeight <
+        50;
     };
 
     const handleInteraction = () => {
       isInteractingRef.current = true;
-      if (interactionTimerRef.current) clearTimeout(interactionTimerRef.current);
+      if (interactionTimerRef.current)
+        clearTimeout(interactionTimerRef.current);
       interactionTimerRef.current = setTimeout(() => {
         isInteractingRef.current = false;
       }, 500);
@@ -54,13 +56,16 @@ export function useChat(
 
     container.addEventListener("scroll", handleScroll, { passive: true });
     container.addEventListener("wheel", handleInteraction, { passive: true });
-    container.addEventListener("touchstart", handleInteraction, { passive: true });
+    container.addEventListener("touchstart", handleInteraction, {
+      passive: true,
+    });
 
     return () => {
       container.removeEventListener("scroll", handleScroll);
       container.removeEventListener("wheel", handleInteraction);
       container.removeEventListener("touchstart", handleInteraction);
-      if (interactionTimerRef.current) clearTimeout(interactionTimerRef.current);
+      if (interactionTimerRef.current)
+        clearTimeout(interactionTimerRef.current);
     };
   }, []);
 
@@ -69,7 +74,10 @@ export function useChat(
     if (!container || messages.length === 0) return;
 
     const isChatSwitched = activeChatId !== prevChatIdRef.current;
-    const shouldAutoScroll = isChatSwitched || forceScrollRef.current || (isAtBottomRef.current && !isInteractingRef.current);
+    const shouldAutoScroll =
+      isChatSwitched ||
+      forceScrollRef.current ||
+      (isAtBottomRef.current && !isInteractingRef.current);
 
     if (shouldAutoScroll) {
       setTimeout(() => {
@@ -77,7 +85,7 @@ export function useChat(
           top: container.scrollHeight,
           behavior: isChatSwitched ? ("instant" as ScrollBehavior) : "smooth",
         });
-        if (isAtBottomRef.current || isChatSwitched || forceScrollRef.current) 
+        if (isAtBottomRef.current || isChatSwitched || forceScrollRef.current)
           forceScrollRef.current = false;
       }, 0);
     }
@@ -208,12 +216,9 @@ export function useChat(
           const res = await engine.chat.completions.create({
             messages: [
               {
-                role: "system",
-                content:
-                  "Generate a 2-5 word concise title for this chat. Output ONLY the title.",
+                role: "user",
+                content: `User: ${text}\nAssistant: ${currentText}\n\nGenerate a 2-5 word concise title for this chat. Output ONLY the title text.`,
               },
-              { role: "user", content: text },
-              { role: "assistant", content: currentText },
             ],
             stream: false,
           });
