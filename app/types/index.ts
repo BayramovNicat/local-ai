@@ -1,8 +1,9 @@
 export interface Attachment {
   id: string;
   type: "image";
-  url: string;
+  url: string; // ObjectURL for rendering
   name: string;
+  blob?: Blob; // For persistence in IDB
 }
 
 export interface Message {

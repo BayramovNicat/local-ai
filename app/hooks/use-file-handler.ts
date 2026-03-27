@@ -1,18 +1,13 @@
 import type { Attachment } from "@/app/types";
 
-function readFileAsAttachment(file: File, idSuffix: string): Promise<Attachment> {
-  return new Promise((resolve) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      resolve({
-        id: `${Date.now()}-${idSuffix}`,
-        type: "image",
-        url: reader.result as string,
-        name: file.name,
-      });
-    };
-    reader.readAsDataURL(file);
-  });
+async function readFileAsAttachment(file: File, idSuffix: string): Promise<Attachment> {
+  return {
+    id: `${Date.now()}-${idSuffix}`,
+    type: "image",
+    url: URL.createObjectURL(file), // Memory efficient ObjectURL for session
+    name: file.name,
+    blob: file, // Store the blob for persistence in IndexedDB
+  };
 }
 
 export async function processFiles(files: FileList | File[]): Promise<Attachment[]> {

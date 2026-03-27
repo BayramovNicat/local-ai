@@ -1,4 +1,4 @@
-import type { ChatSession, EmbeddingRecord, Document } from "@/app/types";
+import type { ChatSession, EmbeddingRecord, Document, Message } from "@/app/types";
 
 const DB_NAME = "local-ai";
 const STORE_CHATS = "chats";
@@ -50,14 +50,45 @@ function openDB(): Promise<IDBDatabase> {
 
 // ── Chat CRUD ──────────────────────────────────────────────
 
+/**
+ * ObjectURLs are transient and should not be persisted.
+ * We store the Blob instead and recreate the URL on load.
+ */
+function prepareChatForSave(chat: Omit<ChatSession, "id">): Omit<ChatSession, "id"> {
+  return {
+    ...chat,
+    messages: chat.messages.map(msg => ({
+      ...msg,
+      attachments: msg.attachments?.map(att => ({
+        ...att,
+        url: "", // Don't persist transient blob: URLs
+      }))
+    }))
+  };
+}
+
+function restoreChatFromSave(chat: ChatSession): ChatSession {
+  return {
+    ...chat,
+    messages: chat.messages.map(msg => ({
+      ...msg,
+      attachments: msg.attachments?.map(att => ({
+        ...att,
+        url: att.blob ? URL.createObjectURL(att.blob) : att.url
+      }))
+    }))
+  };
+}
+
 export async function saveChat(
   id: string,
   data: Omit<ChatSession, "id">,
 ): Promise<void> {
   const db = await openDB();
+  const preparedData = prepareChatForSave(data);
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_CHATS, "readwrite");
-    const req = tx.objectStore(STORE_CHATS).put(data, id);
+    const req = tx.objectStore(STORE_CHATS).put(preparedData, id);
     req.onsuccess = () => resolve();
     req.onerror = () => reject(req.error);
   });
@@ -73,10 +104,28 @@ export async function loadAllChats(): Promise<ChatSession[]> {
     tx.oncomplete = () => {
       const keys = keysReq.result as string[];
       const vals = valsReq.result as Omit<ChatSession, "id">[];
-      resolve(keys.map((id, i) => ({ id, ...vals[i] })));
+      const chats = keys.map((id, i) => ({ id, ...vals[i] }));
+      resolve(chats.map(restoreChatFromSave));
     };
     tx.onerror = () => reject(tx.error);
   });
+}
+
+/**
+ * Revoke ObjectURLs to prevent memory leaks.
+ */
+export function revokeChatUrls(chats: ChatSession[]) {
+  for (const chat of chats) {
+    for (const msg of chat.messages) {
+      if (msg.attachments) {
+        for (const att of msg.attachments) {
+          if (att.url.startsWith("blob:")) {
+            URL.revokeObjectURL(att.url);
+          }
+        }
+      }
+    }
+  }
 }
 
 export async function deleteChat(id: string): Promise<void> {

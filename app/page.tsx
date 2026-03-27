@@ -16,6 +16,7 @@ import { LoadingBanner } from "@/app/components/chat/loading-banner";
 import { SearchModal } from "@/app/components/search/search-modal";
 import { processFiles } from "@/app/hooks/use-file-handler";
 import { SUPPORTED_DOC_TYPES } from "@/app/data/constants";
+import { revokeChatUrls } from "@/app/lib/db";
 
 export default function Home() {
   const {
@@ -135,6 +136,13 @@ export default function Home() {
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [newChat, initEmbeddingEngine]);
+
+  // Memory Cleanup: Revoke ObjectURLs on unmount
+  useEffect(() => {
+    return () => {
+      revokeChatUrls(history);
+    };
+  }, [history]);
 
   const handleDeleteChat = useCallback(
     (id: string) => {
