@@ -33,6 +33,7 @@ export function useRag(
   getEmbeddingEngine: () => Promise<MLCEngineInterface>,
   getEmbeddingEngineIfReady: () => MLCEngineInterface | null,
   initEmbeddingEngine: () => void,
+  callWorker: (type: string, payload: any) => Promise<any>,
 ) {
   const { error: errorToast } = useToast();
   const [documents, setDocuments] = useState<DocType[]>([]);
@@ -154,57 +155,20 @@ export function useRag(
         });
         const queryVector = response.data[0].embedding;
 
-        // Load only the embeddings we need via indexed queries
-        const [docPool, convPool] = await Promise.all([
-          loadDocEmbeddingsByChatId(chatId),
-          loadConvEmbeddingsExcludingChat(chatId),
-        ]);
-
-        // 1. Document Context (current chat only)
-        const scoredDocs = docPool
-          .map((rec) => ({
-            text: rec.text,
-            score: hybridScore(query, rec.text, queryVector, rec.vector),
-          }))
-          .sort((a, b) => b.score - a.score);
-
-        let docContext = "";
-        for (const chunk of scoredDocs) {
-          if (chunk.score < RAG_SCORE_THRESHOLD_DOCS) break;
-          if (docContext.length + chunk.text.length + 2 > MAX_CONTEXT_CHARS) break;
-          docContext += chunk.text + "\n\n";
-        }
-
-        // 2. Conversation Context (other chats)
-        const chatMap = new Map(history.map((s) => [s.id, s.title]));
-        const scoredConvs = convPool
-          .map((rec) => ({
-            text: rec.text,
-            chatTitle: chatMap.get(rec.chatId) || "Other Chat",
-            score: hybridScore(query, rec.text, queryVector, rec.vector),
-          }))
-          .sort((a, b) => b.score - a.score);
-
-        let convContext = "";
-        const MAX_CONV_CHARS = 1000;
-        for (const chunk of scoredConvs) {
-          if (chunk.score < RAG_SCORE_THRESHOLD_CONV) break;
-          const entry = `[From: ${chunk.chatTitle}] ${chunk.text}\n\n`;
-          if (convContext.length + entry.length > MAX_CONV_CHARS) break;
-          convContext += entry;
-        }
-
-        return {
-          docContext: docContext.trim(),
-          convContext: convContext.trim(),
-        };
+        // Delegate context retrieval and scoring to worker
+        return await callWorker("custom-rag-context", {
+          query,
+          queryVector,
+          chatId,
+          history
+        });
       } catch (err) {
         console.error("[RAG] Failed to get context:", err);
         errorToast("Failed to retrieve context from documents.");
         return { docContext: "", convContext: "" };
       }
     },
-    [getEmbeddingEngineIfReady, errorToast],
+    [getEmbeddingEngineIfReady, callWorker, errorToast],
   );
 
   /**

@@ -21,6 +21,7 @@ export function useEmbeddings() {
   const [isSearching, setIsSearching] = useState(false);
   const embeddingEngineRef = useRef<MLCEngineInterface | null>(null);
   const embeddingPromiseRef = useRef<Promise<MLCEngineInterface> | null>(null);
+  const workerRef = useRef<Worker | null>(null);
 
   const getEmbeddingEngine = useCallback(async (): Promise<MLCEngineInterface> => {
     if (embeddingEngineRef.current) return embeddingEngineRef.current;
@@ -33,6 +34,7 @@ export function useEmbeddings() {
         new URL("../workers/embedding-engine.ts", import.meta.url),
         { type: "module" },
       );
+      workerRef.current = worker;
 
       const engine = await webllm.CreateWebWorkerMLCEngine(
         worker,
@@ -59,6 +61,25 @@ export function useEmbeddings() {
     });
 
     return promise;
+  }, []);
+
+  const callWorker = useCallback(async (type: string, payload: any): Promise<any> => {
+    if (!workerRef.current) throw new Error("Worker not initialized");
+    const id = Math.random().toString(36).substring(7);
+    return new Promise((resolve, reject) => {
+      const handler = (e: MessageEvent) => {
+        if (e.data.id === id) {
+          workerRef.current?.removeEventListener("message", handler);
+          if (e.data.type.endsWith("-error")) {
+            reject(new Error(e.data.payload));
+          } else {
+            resolve(e.data.payload);
+          }
+        }
+      };
+      workerRef.current?.addEventListener("message", handler);
+      workerRef.current?.postMessage({ type, payload, id });
+    });
   }, []);
 
   /**
@@ -158,9 +179,14 @@ export function useEmbeddings() {
         });
 
         const queryVector = response.data[0].embedding;
-        const allEmbeddings = await loadAllEmbeddings();
 
-        return searchEmbeddings(queryVector, allEmbeddings, history, query);
+        // Perform search in worker
+        return await callWorker("custom-search", {
+          queryVector,
+          history,
+          query,
+          topK: 10
+        });
       } catch (err) {
         console.error("[Embedding] Search failed:", err);
         errorToast("Search failed. Please try again.");
@@ -169,7 +195,7 @@ export function useEmbeddings() {
         setIsSearching(false);
       }
     },
-    [getEmbeddingEngine, errorToast],
+    [getEmbeddingEngine, callWorker, errorToast],
   );
 
   /**
@@ -193,5 +219,6 @@ export function useEmbeddings() {
     embedMessages,
     search,
     cleanupEmbeddings,
+    callWorker,
   };
 }
