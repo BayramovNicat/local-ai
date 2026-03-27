@@ -186,34 +186,27 @@ export function useChat(
 
   const updateHistory = useCallback(
     (chatId: string, msgs: Message[], title?: string) => {
-      let updatedSession: ChatSession | undefined;
-
       setHistory((prev) => {
         const session = prev.find((s) => s.id === chatId);
         if (!session) return prev;
-
-        updatedSession = { ...session, messages: msgs, ...(title && { title }) };
-        return prev.map((s) => (s.id === chatId ? updatedSession! : s));
+        return prev.map((s) => (s.id === chatId ? { ...s, messages: msgs, ...(title && { title }) } : s));
       });
 
-      // Move side effects OUT of the state updater
-      if (updatedSession) {
-        const session = updatedSession;
-        saveChatToDB(chatId, {
-          title: session.title,
-          messages: session.messages,
-        }).catch((err) => {
-          console.error(err);
-          if (isQuotaExceededError(err)) {
-            errorToast('Storage quota exceeded. Please delete some chats.');
-          } else {
-            errorToast('Failed to save chat to database.');
-          }
-        });
-        broadcastUpdate(chatId, session.messages, session.title);
-      }
+      // Side effect with the correct title
+      // If title is provided, use it. If not, try to find it in historyRef, but fallback to 'New Chat'
+      // To be safer, we can try to find the session in historyRef which is updated every render.
+      const currentSession = historyRef.current.find((s) => s.id === chatId);
+      const finalTitle = title || currentSession?.title || 'New Chat';
+
+      saveChatToDB(chatId, {
+        title: finalTitle,
+        messages: msgs,
+      }).catch((err) => {
+        console.error(err);
+      });
+      broadcastUpdate(chatId, msgs, finalTitle);
     },
-    [broadcastUpdate, errorToast],
+    [broadcastUpdate],
   );
 
   useEffect(() => {
@@ -234,37 +227,28 @@ export function useChat(
   const createChat = useCallback(
     async (title?: string) => {
       const id = crypto.randomUUID();
+      const initialTitle = title ? (title.length > 20 ? title.slice(0, 20) + '...' : title) : 'New Chat';
       const newSession: ChatSession = {
         id,
-        title: title ? (title.length > 20 ? title.slice(0, 20) + '...' : title) : 'New Chat',
+        title: initialTitle,
         messages: [],
       };
       
-      // Update state synchronously for immediate UI feedback
       setHistory((prev) => [newSession, ...prev]);
       setActiveChatId(id);
+      activeChatIdRef.current = id;
       
-      // Perform DB save in background
-      saveChatToDB(id, { title: newSession.title, messages: [] }).catch((err) => {
-        console.error(err);
-        if (isQuotaExceededError(err)) {
-          errorToast('Storage quota exceeded. Please delete some chats.');
-        } else {
-          errorToast('Failed to save new chat to database.');
-        }
-      });
-      
-      broadcastUpdate(id, [], newSession.title);
-      return id;
+      saveChatToDB(id, { title: initialTitle, messages: [] }).catch(console.error);
+      broadcastUpdate(id, [], initialTitle);
+      return { id, title: initialTitle };
     },
-    [errorToast, broadcastUpdate],
+    [broadcastUpdate],
   );
 
   const handleSend = useCallback(async () => {
     const text = input.trim();
     if (!text && attachments.length === 0) return;
 
-    // 1. Prepare messages IMMEDIATELY
     const startMessages = messagesRef.current;
     const isFirstMessage = startMessages.length === 0;
     forceScrollRef.current = true;
@@ -285,27 +269,27 @@ export function useChat(
 
     let activeMessages = [...startMessages, userMsg, assistantMsg];
     
-    // 2. Update messages state IMMEDIATELY to trigger UI transition
     setMessages(activeMessages);
     setInput('');
     setAttachments([]);
     setIsStreaming(true);
 
-    // 3. Ensure we have a chatId IMMEDIATELY
     let currentChatId = activeChatIdRef.current;
+    let currentTitle = 'New Chat';
+
     if (!currentChatId) {
-      // createChat now updates activeChatId synchronously
-      currentChatId = await createChat(text);
+      const result = await createChat(text);
+      currentChatId = result.id;
+      currentTitle = result.title;
+    } else {
+      const session = historyRef.current.find(s => s.id === currentChatId);
+      currentTitle = session?.title || 'New Chat';
     }
 
-    // 4. Proceed with heavy operations (Save, Context, LLM)
     if (currentChatId) {
-      const session = historyRef.current.find((s) => s.id === currentChatId);
-      const title = session?.title || 'New Chat';
-      const prevMsgs = session?.messages || [];
       saveChatToDB(currentChatId, {
-        title,
-        messages: [...prevMsgs, userMsg],
+        title: currentTitle,
+        messages: [...startMessages, userMsg],
       }).catch(console.error);
     }
 
@@ -335,10 +319,8 @@ export function useChat(
       let totalChars = 0;
       const historyToKeep = [];
 
-      // Always include userMsg
       totalChars += userMsg.content.length;
 
-      // Iterate backwards through previous messages
       for (let i = startMessages.length - 1; i >= 0; i--) {
         const msg = startMessages[i];
         if (historyToKeep.length >= MAX_HISTORY_MSGS) break;
@@ -360,8 +342,8 @@ export function useChat(
       let currentText = '';
       let lastUpdateTime = Date.now();
       let lastSaveTime = Date.now();
-      const UPDATE_INTERVAL = 50; // ms
-      const SAVE_INTERVAL = 2000; // ms
+      const UPDATE_INTERVAL = 50; 
+      const SAVE_INTERVAL = 2000; 
 
       for await (const chunk of chunks) {
         currentText += chunk.choices[0]?.delta.content || '';
@@ -374,19 +356,15 @@ export function useChat(
           lastUpdateTime = now;
         }
 
-        // Periodically save assistant response to prevent data loss mid-stream
         if (now - lastSaveTime > SAVE_INTERVAL && currentChatId) {
-          const midMessages = activeMessages.map((m) =>
+          activeMessages = activeMessages.map((m) =>
             m.id === assistantId ? { ...m, content: currentText } : m,
           );
-          const session = historyRef.current.find((s) => s.id === currentChatId);
-          const title = session?.title || 'New Chat';
-          saveChatToDB(currentChatId, { title, messages: midMessages }).catch(console.error);
+          saveChatToDB(currentChatId, { title: currentTitle, messages: activeMessages }).catch(console.error);
           lastSaveTime = now;
         }
       }
 
-      // Update final local messages
       activeMessages = activeMessages.map((m) =>
         m.id === assistantId ? { ...m, content: currentText } : m,
       );
@@ -398,19 +376,20 @@ export function useChat(
             messages: [
               {
                 role: 'user',
-                content: `User: ${text}\nAssistant: ${currentText}\n\nGenerate a 2-5 word concise title for this chat. Output ONLY the title text.`,
+                content: `User: ${text}\nAssistant: ${currentText}\n\nGenerate a 2-5 word concise title for this chat. Output ONLY the title text. No quotes.`,
               },
             ],
             stream: false,
           });
-          let title = res.choices[0]?.message.content?.trim() || '';
+          let aiTitle = res.choices[0]?.message.content?.trim() || '';
+          aiTitle = aiTitle.replace(/^["']|["']$/g, '');
           const generic = ['ai assistant', 'helpful assistant', 'untitled', 'chat with ai'];
-          if (!title || generic.some((g) => title.toLowerCase().includes(g)) || title.length > 50) {
-            title = text.length > 25 ? text.slice(0, 25) + '...' : text;
+          if (!aiTitle || generic.some((g) => aiTitle.toLowerCase().includes(g)) || aiTitle.length > 50) {
+            aiTitle = currentTitle;
           }
-          updateHistory(currentChatId!, activeMessages, title.replace(/^["']|["']$/g, ''));
+          updateHistory(currentChatId!, activeMessages, aiTitle);
         } catch (e) {
-          console.error(e);
+          console.error('[Title Generation Failed]', e);
           updateHistory(currentChatId!, activeMessages);
         }
       } else if (currentChatId) {

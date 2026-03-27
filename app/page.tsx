@@ -165,7 +165,8 @@ export default function Home() {
     async (files: File[]) => {
       let chatId = activeChatId;
       if (!chatId) {
-        chatId = await createChat();
+        const result = await createChat();
+        chatId = result.id;
       }
 
       const imageFiles: File[] = [];
