@@ -275,12 +275,29 @@ export default function Home() {
                 <EmptyState accent={accentColor} />
               </div>
             ) : (
-              <MessageList
-                key={activeChatId || "new"}
-                messages={messages}
-                onEdit={editMessage}
-                scrollContainerRef={scrollContainerRef}
-              />
+              <>
+                <MessageList
+                  key={activeChatId || "new"}
+                  messages={messages}
+                  onEdit={editMessage}
+                  scrollContainerRef={scrollContainerRef}
+                />
+                {isStreaming &&
+                  messages.length > 0 &&
+                  messages[messages.length - 1].role === "assistant" &&
+                  !messages[messages.length - 1].content && (
+                    <div className="flex justify-start animate-in fade-in duration-300">
+                      <div className="rounded-2xl px-4 py-3 bg-neutral-900/50 text-neutral-400 text-xs flex items-center gap-2 italic">
+                        <span>AI is thinking</span>
+                        <div className="flex gap-1">
+                          <span className="w-1 h-1 bg-neutral-500 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+                          <span className="w-1 h-1 bg-neutral-500 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+                          <span className="w-1 h-1 bg-neutral-500 rounded-full animate-bounce"></span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+              </>
             )}
           </div>
         </main>
