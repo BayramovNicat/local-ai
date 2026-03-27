@@ -249,12 +249,29 @@ export async function loadConvEmbeddingsExcludingChat(
 
 export async function getEmbeddedMessageIds(): Promise<Set<string>> {
   if (_embeddedMsgIds) return _embeddedMsgIds;
-  const all = await loadAllEmbeddings();
-  _embeddedMsgIds = new Set<string>();
-  for (const rec of all) {
-    if (rec.messageId) _embeddedMsgIds.add(rec.messageId);
-  }
-  return _embeddedMsgIds;
+  
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_EMBEDDINGS, "readonly");
+    const index = tx.objectStore(STORE_EMBEDDINGS).index("messageId");
+    const results = new Set<string>();
+    
+    // openKeyCursor only retrieves keys, much faster than loading full objects (vectors)
+    const req = index.openKeyCursor();
+    req.onsuccess = (e) => {
+      const cursor = (e.target as IDBRequest<IDBCursor | null>).result;
+      if (cursor) {
+        if (cursor.key) results.add(cursor.key as string);
+        cursor.continue();
+      }
+    };
+    
+    tx.oncomplete = () => {
+      _embeddedMsgIds = results;
+      resolve(results);
+    };
+    tx.onerror = () => reject(tx.error);
+  });
 }
 
 // ── Document CRUD ──────────────────────────────────────────
