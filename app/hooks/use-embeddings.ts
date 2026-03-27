@@ -1,26 +1,30 @@
 'use client';
 
-import { useState, useRef, useCallback, useEffect } from 'react';
 import { useToast } from '@/app/components/ui/toast';
-import type { MLCEngineInterface } from '@mlc-ai/web-llm';
-import type { ChatSession, Message, EmbeddingRecord, SearchResult } from '@/app/types';
-import { EMBEDDING_MODEL, EMBEDDING_BATCH_SIZE } from '@/app/data/constants';
+import { EMBEDDING_BATCH_SIZE, EMBEDDING_MODEL } from '@/app/data/constants';
 import {
-  saveEmbeddings,
   deleteEmbeddingsByChatId,
   getEmbeddedMessageIds,
   isQuotaExceededError,
+  saveEmbeddings,
 } from '@/app/lib/db';
 import { chunkText } from '@/app/lib/embeddings';
+import type { ChatSession, EmbeddingRecord, Message, SearchResult } from '@/app/types';
+import type { MLCEngineInterface } from '@mlc-ai/web-llm';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 export function useEmbeddings() {
   const { error: errorToast } = useToast();
   const [isEmbeddingReady, setIsEmbeddingReady] = useState(false);
   const [isIndexing, setIsIndexing] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
+
+  // WebLLM Engine for creating embeddings
   const embeddingEngineRef = useRef<MLCEngineInterface | null>(null);
   const embeddingPromiseRef = useRef<Promise<MLCEngineInterface> | null>(null);
-  const workerRef = useRef<Worker | null>(null);
+
+  // Dedicated RAG worker for vector search and context retrieval
+  const ragWorkerRef = useRef<Worker | null>(null);
 
   const getEmbeddingEngine = useCallback(async (): Promise<MLCEngineInterface> => {
     if (embeddingEngineRef.current) return embeddingEngineRef.current;
@@ -29,12 +33,12 @@ export function useEmbeddings() {
     const promise = (async () => {
       const webllm = await import('@mlc-ai/web-llm');
 
-      const worker = new Worker(new URL('../workers/embedding-engine.ts', import.meta.url), {
+      // Use the generic engine worker for WebLLM tasks
+      const engineWorker = new Worker(new URL('../workers/engine.ts', import.meta.url), {
         type: 'module',
       });
-      workerRef.current = worker;
 
-      const engine = await webllm.CreateWebWorkerMLCEngine(worker, EMBEDDING_MODEL, {
+      const engine = await webllm.CreateWebWorkerMLCEngine(engineWorker, EMBEDDING_MODEL, {
         initProgressCallback: (report) => {
           console.log(`[Embedding] ${report.text}`);
         },
@@ -45,7 +49,6 @@ export function useEmbeddings() {
       return engine;
     })();
 
-    // Set promise ref immediately so concurrent callers share the same promise
     embeddingPromiseRef.current = promise;
 
     promise.catch((err) => {
@@ -57,38 +60,51 @@ export function useEmbeddings() {
     return promise;
   }, [errorToast]);
 
-  const callWorker = useCallback(async (type: string, payload: unknown): Promise<unknown> => {
-    if (!workerRef.current) throw new Error('Worker not initialized');
-    const id = crypto.randomUUID();
+  const getRagWorker = useCallback(() => {
+    if (ragWorkerRef.current) return ragWorkerRef.current;
 
-    return new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        workerRef.current?.removeEventListener('message', handler);
-        reject(new Error(`Worker call timeout: ${type}`));
-      }, 30000); // 30s timeout
-
-      const handler = (e: MessageEvent) => {
-        if (e.data.id === id) {
-          clearTimeout(timeout);
-          workerRef.current?.removeEventListener('message', handler);
-          if (e.data.type.endsWith('-error')) {
-            reject(new Error(e.data.payload));
-          } else {
-            resolve(e.data.payload);
-          }
-        }
-      };
-      workerRef.current?.addEventListener('message', handler);
-      workerRef.current?.postMessage({ type, payload, id });
+    const worker = new Worker(new URL('../workers/rag-worker.ts', import.meta.url), {
+      type: 'module',
     });
+    ragWorkerRef.current = worker;
+    return worker;
   }, []);
 
-  // Cleanup worker on unmount
+  const callWorker = useCallback(
+    async (type: string, payload: unknown): Promise<unknown> => {
+      const worker = getRagWorker();
+      const id = crypto.randomUUID();
+
+      return new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          worker.removeEventListener('message', handler);
+          reject(new Error(`Worker call timeout: ${type}`));
+        }, 30000); // 30s timeout
+
+        const handler = (e: MessageEvent) => {
+          if (e.data.id === id) {
+            clearTimeout(timeout);
+            worker.removeEventListener('message', handler);
+            if (e.data.type.endsWith('-error')) {
+              reject(new Error(e.data.payload));
+            } else {
+              resolve(e.data.payload);
+            }
+          }
+        };
+        worker.addEventListener('message', handler);
+        worker.postMessage({ type, payload, id });
+      });
+    },
+    [getRagWorker],
+  );
+
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (workerRef.current) {
-        workerRef.current.terminate();
-        workerRef.current = null;
+      if (ragWorkerRef.current) {
+        ragWorkerRef.current.terminate();
+        ragWorkerRef.current = null;
       }
       if (embeddingEngineRef.current) {
         embeddingEngineRef.current.unload();
@@ -115,12 +131,10 @@ export function useEmbeddings() {
     async (records: EmbeddingRecord[]) => {
       if (records.length === 0) return;
       await saveEmbeddings(records);
-      if (workerRef.current) {
-        try {
-          await callWorker('invalidate-cache', {});
-        } catch (e) {
-          console.warn('[Embedding] Failed to invalidate cache in worker:', e);
-        }
+      try {
+        await callWorker('invalidate-cache', {});
+      } catch (e) {
+        console.warn('[Embedding] Failed to invalidate cache in worker:', e);
       }
     },
     [callWorker],
@@ -211,7 +225,7 @@ export function useEmbeddings() {
 
         const queryVector = response.data[0].embedding;
 
-        // Perform search in worker with lightweight metadata
+        // Perform search in dedicated RAG worker
         const historyMetadata = Object.fromEntries(history.map((s) => [s.id, s.title]));
         return (await callWorker('custom-search', {
           queryVector,

@@ -1,19 +1,11 @@
-import { WebWorkerMLCEngineHandler } from '@mlc-ai/web-llm';
+import { RAG_SCORE_THRESHOLD_CONV, RAG_SCORE_THRESHOLD_DOCS } from '../data/constants';
 import {
-  loadAllEmbeddings,
-  loadDocEmbeddingsByChatId,
-  loadConvEmbeddingsExcludingChat,
   invalidateEmbeddingsCache,
+  loadAllEmbeddings,
+  loadConvEmbeddingsExcludingChat,
+  loadDocEmbeddingsByChatId,
 } from '../lib/db';
-import { searchEmbeddings, hybridScore } from '../lib/embeddings';
-import {
-  RAG_SCORE_THRESHOLD_DOCS,
-  MAX_CONTEXT_CHARS,
-  RAG_SCORE_THRESHOLD_CONV,
-} from '../data/constants';
-import type { ChatSession } from '../types';
-
-const handler = new WebWorkerMLCEngineHandler();
+import { hybridScore, searchEmbeddings } from '../lib/embeddings';
 
 self.onmessage = async (e: MessageEvent) => {
   const { type, payload } = e.data;
@@ -38,7 +30,7 @@ self.onmessage = async (e: MessageEvent) => {
   }
   if (type === 'custom-rag-context') {
     const { query, queryVector, chatId, historyMetadata, maxContextChars } = payload;
-    const limit = maxContextChars || MAX_CONTEXT_CHARS;
+    const limit = maxContextChars;
 
     // Pre-calculate query terms for hybrid scoring
     const queryTerms = query
@@ -101,7 +93,4 @@ self.onmessage = async (e: MessageEvent) => {
     }
     return;
   }
-
-  // Fallback to default WebLLM handler
-  handler.onmessage(e);
 };

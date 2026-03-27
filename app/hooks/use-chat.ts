@@ -41,6 +41,11 @@ export function useChat(
   const isInteractingRef = useRef(false);
   const interactionTimerRef = useRef<NodeJS.Timeout | null>(null);
   const forceScrollRef = useRef(false);
+  const tabIdRef = useRef<string>('');
+
+  useEffect(() => {
+    tabIdRef.current = crypto.randomUUID();
+  }, []);
 
   // Cleanup URLs on final unmount
   useEffect(() => {
@@ -54,7 +59,10 @@ export function useChat(
     const channel = new BroadcastChannel('local-ai-sync');
 
     const handler = (event: MessageEvent) => {
-      const { type, payload } = event.data;
+      const { type, payload, senderId } = event.data;
+
+      // Ignore messages from self
+      if (senderId === tabIdRef.current) return;
 
       if (type === 'chat-update') {
         const { chatId, messages: rawMessages, title } = payload;
@@ -104,13 +112,21 @@ export function useChat(
 
   const broadcastUpdate = useCallback((chatId: string, messages: Message[], title?: string) => {
     const channel = new BroadcastChannel('local-ai-sync');
-    channel.postMessage({ type: 'chat-update', payload: { chatId, messages, title } });
+    channel.postMessage({
+      type: 'chat-update',
+      payload: { chatId, messages, title },
+      senderId: tabIdRef.current,
+    });
     channel.close();
   }, []);
 
   const broadcastDelete = useCallback((chatId: string) => {
     const channel = new BroadcastChannel('local-ai-sync');
-    channel.postMessage({ type: 'chat-delete', payload: { chatId } });
+    channel.postMessage({
+      type: 'chat-delete',
+      payload: { chatId },
+      senderId: tabIdRef.current,
+    });
     channel.close();
   }, []);
 
@@ -223,9 +239,13 @@ export function useChat(
         title: title ? (title.length > 20 ? title.slice(0, 20) + '...' : title) : 'New Chat',
         messages: [],
       };
+      
+      // Update state synchronously for immediate UI feedback
       setHistory((prev) => [newSession, ...prev]);
       setActiveChatId(id);
-      await saveChatToDB(id, { title: newSession.title, messages: [] }).catch((err) => {
+      
+      // Perform DB save in background
+      saveChatToDB(id, { title: newSession.title, messages: [] }).catch((err) => {
         console.error(err);
         if (isQuotaExceededError(err)) {
           errorToast('Storage quota exceeded. Please delete some chats.');
@@ -233,6 +253,7 @@ export function useChat(
           errorToast('Failed to save new chat to database.');
         }
       });
+      
       broadcastUpdate(id, [], newSession.title);
       return id;
     },
@@ -243,13 +264,10 @@ export function useChat(
     const text = input.trim();
     if (!text && attachments.length === 0) return;
 
-    // Use current state via Ref to avoid stale closure issues for the START of the function
+    // 1. Prepare messages IMMEDIATELY
     const startMessages = messagesRef.current;
     const isFirstMessage = startMessages.length === 0;
     forceScrollRef.current = true;
-
-    let currentChatId = activeChatIdRef.current;
-    if (!currentChatId) currentChatId = await createChat(text);
 
     const userMsg: Message = {
       id: crypto.randomUUID(),
@@ -265,15 +283,22 @@ export function useChat(
       content: '',
     };
 
-    // Track messages locally in the function to avoid race conditions with state/refs
     let activeMessages = [...startMessages, userMsg, assistantMsg];
     
+    // 2. Update messages state IMMEDIATELY to trigger UI transition
     setMessages(activeMessages);
     setInput('');
     setAttachments([]);
     setIsStreaming(true);
 
-    // Save user message immediately to prevent data loss
+    // 3. Ensure we have a chatId IMMEDIATELY
+    let currentChatId = activeChatIdRef.current;
+    if (!currentChatId) {
+      // createChat now updates activeChatId synchronously
+      currentChatId = await createChat(text);
+    }
+
+    // 4. Proceed with heavy operations (Save, Context, LLM)
     if (currentChatId) {
       const session = historyRef.current.find((s) => s.id === currentChatId);
       const title = session?.title || 'New Chat';

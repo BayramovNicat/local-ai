@@ -94,7 +94,7 @@ export default function Home() {
   // Advanced Animation Logic
   const [[prevChatId, prevMsgCount], setPrev] = useState([activeChatId, messages.length]);
 
-  const isFirstMsg = prevChatId === activeChatId && prevMsgCount === 0 && messages.length > 0;
+  const isFirstMsg = prevMsgCount === 0 && messages.length > 0;
 
   if (prevChatId !== activeChatId || prevMsgCount !== messages.length) {
     setPrev([activeChatId, messages.length]);
@@ -268,7 +268,6 @@ export default function Home() {
             ) : (
               <>
                 <MessageList
-                  key={activeChatId || 'new'}
                   messages={messages}
                   onEdit={editMessage}
                   scrollContainerRef={scrollContainerRef}
