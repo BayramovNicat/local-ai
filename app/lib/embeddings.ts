@@ -1,4 +1,4 @@
-import type { EmbeddingRecord, SearchResult, ChatSession } from '@/app/types';
+import type { EmbeddingRecord, SearchResult } from '@/app/types';
 
 /**
  * Normalize a vector to unit length (L2 norm).

@@ -242,10 +242,10 @@ export default function Home() {
 
         <main
           ref={scrollContainerRef as React.RefObject<HTMLElement>}
-          className={`absolute inset-0 overflow-y-auto pt-16 pb-28 ${messages.length === 0 ? 'flex items-center justify-center' : ''}`}
+          className={`absolute inset-0 overflow-y-auto pt-16 pb-32 sm:pb-40 ${messages.length === 0 ? 'flex items-center justify-center' : ''}`}
         >
           <div
-            className={`mx-auto max-w-4xl px-4 sm:px-6 md:px-8 ${messages.length === 0 ? '' : 'space-y-6'}`}
+            className={`mx-auto max-w-4xl px-4 sm:px-6 md:px-8 pb-8 ${messages.length === 0 ? '' : 'space-y-6'}`}
             role="log"
             aria-live="polite"
             aria-relevant="additions text"

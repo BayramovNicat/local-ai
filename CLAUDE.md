@@ -17,7 +17,7 @@ A fully client-side AI chat app — no backend, no API keys. LLMs run in-browser
 
 - **use-engine.ts** — Manages the main LLM engine lifecycle. Downloads and initializes the selected model in a Web Worker. Exposes `waitForEngine()` for async access.
 - **use-chat.ts** — Core chat logic: message state, streaming responses, chat CRUD, auto-titling, scroll management. Uses `waitForEngine` for inference and optional `getContext` for RAG.
-- **use-embeddings.ts** — Manages the embedding model (`snowflake-arctic-embed-s`) in a separate Web Worker. Three access tiers: `getEmbeddingEngine` (async, triggers download), `getEmbeddingEngineIfReady` (sync, returns null if not loaded), `initEmbeddingEngine` (fire-and-forget). Handles message embedding and semantic search.
+- **use-embeddings.ts** — Manages the embedding model (`snowflake-arctic-embed-m`) in a separate Web Worker. Three access tiers: `getEmbeddingEngine` (async, triggers download), `getEmbeddingEngineIfReady` (sync, returns null if not loaded), `initEmbeddingEngine` (fire-and-forget). Handles message embedding and semantic search.
 - **use-rag.ts** — RAG pipeline: document upload (extract → chunk → embed → store), context retrieval with dual context (document chunks from current chat + conversation memories from other chats). Uses `getEmbeddingEngineIfReady` to avoid blocking on model download.
 - **use-preferences.ts** — Persists model selection, accent color, sidebar state to localStorage.
 

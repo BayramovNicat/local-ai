@@ -349,8 +349,9 @@ export async function getEmbeddedMessageIds(): Promise<Set<string>> {
     const index = tx.objectStore(STORE_EMBEDDINGS).index('messageId');
     const results = new Set<string>();
 
-    // openKeyCursor only retrieves keys, much faster than loading full objects (vectors)
-    const req = index.openKeyCursor();
+    // openKeyCursor with 'nextunique' direction only retrieves unique keys,
+    // much faster than visiting every chunk for every message
+    const req = index.openKeyCursor(null, 'nextunique');
     req.onsuccess = (e) => {
       const cursor = (e.target as IDBRequest<IDBCursor | null>).result;
       if (cursor) {
