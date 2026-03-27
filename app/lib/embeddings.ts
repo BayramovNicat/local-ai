@@ -112,22 +112,69 @@ export function searchEmbeddings(
 }
 
 /**
- * Split long text into overlapping chunks for embedding.
- * Each chunk is at most `maxLength` characters with `overlap` character overlap.
+ * Recursive character splitter: attempts to split text at natural boundaries
+ * (paragraphs, sentences, words) to keep chunks semantically coherent.
  */
 export function chunkText(
   text: string,
   maxLength = 512,
   overlap = 64,
 ): string[] {
-  const trimmed = text.trim();
-  if (trimmed.length <= maxLength) return [trimmed];
-
+  const separators = ["\n\n", "\n", ". ", "? ", "! ", " ", ""];
   const chunks: string[] = [];
-  let start = 0;
-  while (start < trimmed.length) {
-    chunks.push(trimmed.slice(start, start + maxLength));
-    start += maxLength - overlap;
+
+  function splitRecursive(input: string): string[] {
+    const trimmed = input.trim();
+    if (!trimmed) return [];
+    if (trimmed.length <= maxLength) return [trimmed];
+
+    // Find the best separator
+    let separator = separators[separators.length - 1];
+    for (const s of separators) {
+      if (trimmed.includes(s)) {
+        separator = s;
+        break;
+      }
+    }
+
+    const parts = trimmed.split(separator);
+    const result: string[] = [];
+    let currentChunk = "";
+
+    for (const part of parts) {
+      const partWithSeparator = currentChunk ? separator + part : part;
+      if ((currentChunk + partWithSeparator).length <= maxLength) {
+        currentChunk += partWithSeparator;
+      } else {
+        if (currentChunk) result.push(currentChunk);
+        
+        // If the part itself is too long, recurse further
+        if (part.length > maxLength) {
+          result.push(...splitRecursive(part));
+        } else {
+          currentChunk = part;
+        }
+      }
+    }
+    if (currentChunk) result.push(currentChunk);
+    return result;
   }
-  return chunks;
+
+  const initialChunks = splitRecursive(text);
+  
+  // Apply overlap
+  if (overlap <= 0 || initialChunks.length <= 1) return initialChunks;
+
+  const overlapped: string[] = [];
+  for (let i = 0; i < initialChunks.length; i++) {
+    let chunk = initialChunks[i];
+    if (i > 0) {
+      const prev = initialChunks[i - 1];
+      const overlapText = prev.slice(-overlap);
+      chunk = overlapText + chunk;
+    }
+    overlapped.push(chunk);
+  }
+
+  return overlapped;
 }
