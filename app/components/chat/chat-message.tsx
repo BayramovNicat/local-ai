@@ -21,7 +21,13 @@ export const ChatMessage = memo(function ChatMessage({
   const isUser = message.role === "user";
 
   return (
-    <div className={`group flex ${isUser ? "justify-end" : "justify-start"}`}>
+    <div 
+      className={`group flex ${isUser ? "justify-end" : "justify-start"}`}
+      style={{
+        contentVisibility: "auto",
+        containIntrinsicSize: "auto 100px",
+      }}
+    >
       <div
         className={`flex flex-col w-full max-w-full ${isUser ? "items-end" : "items-start"}`}
       >

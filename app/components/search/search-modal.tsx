@@ -31,20 +31,10 @@ export function SearchModal({
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Focus input when modal opens, clear debounce when it closes
+  // Focus input when modal opens
   useEffect(() => {
     if (isOpen) {
-      queueMicrotask(() => {
-        setQuery("");
-        setResults([]);
-        setHasSearched(false);
-      });
       setTimeout(() => inputRef.current?.focus(), 50);
-    } else {
-      if (debounceRef.current) {
-        clearTimeout(debounceRef.current);
-        debounceRef.current = null;
-      }
     }
   }, [isOpen]);
 

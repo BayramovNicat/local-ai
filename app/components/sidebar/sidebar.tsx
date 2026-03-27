@@ -62,7 +62,11 @@ export function Sidebar({
                   ? ""
                   : "border-transparent text-neutral-400 hover:bg-neutral-900 hover:text-neutral-200"
               }`}
-              style={activeChatId === session.id ? { borderColor: `${accent}4D`, color: "#ffffff" } : undefined}
+              style={{
+                contentVisibility: "auto",
+                containIntrinsicSize: "auto 40px",
+                ...(activeChatId === session.id ? { borderColor: `${accent}4D`, color: "#ffffff" } : {}),
+              }}
               onClick={() => onSelectChat(session.id)}
             >
               <MessageSquare size={14} className="shrink-0" />

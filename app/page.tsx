@@ -9,7 +9,7 @@ import { useEmbeddings } from "@/app/hooks/use-embeddings";
 import { useRag } from "@/app/hooks/use-rag";
 import { Sidebar } from "@/app/components/sidebar/sidebar";
 import { Header } from "@/app/components/header/header";
-import { ChatMessage } from "@/app/components/chat/chat-message";
+import { MessageList } from "@/app/components/chat/message-list";
 import { EmptyState } from "@/app/components/chat/empty-state";
 import { MessageInput } from "@/app/components/chat/message-input";
 import { LoadingBanner } from "@/app/components/chat/loading-banner";
@@ -264,14 +264,14 @@ export default function Home() {
                 <EmptyState accent={accentColor} />
               </div>
             ) : (
-              messages.map((msg) => (
-                <ChatMessage
-                  key={msg.id}
-                  message={msg}
-                  accent={accentColor}
-                  onEdit={editMessage}
-                />
-              ))
+              <MessageList
+                key={activeChatId || "new"}
+                messages={messages}
+                accent={accentColor}
+                onEdit={editMessage}
+                scrollContainerRef={scrollContainerRef}
+                chatId={activeChatId}
+              />
             )}
           </div>
         </main>
@@ -303,6 +303,7 @@ export default function Home() {
       </div>
 
       <SearchModal
+        key={isSearchOpen ? "open" : "closed"}
         isOpen={isSearchOpen}
         accent={accentColor}
         isSearching={isSearching}
@@ -311,7 +312,6 @@ export default function Home() {
         onSearch={handleSearch}
         onSelectResult={handleSearchSelect}
         onClose={() => setIsSearchOpen(false)}
-      />
-    </div>
+      />    </div>
   );
 }
