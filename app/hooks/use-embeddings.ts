@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
+import { useToast } from "@/app/components/ui/toast";
 import type { MLCEngineInterface } from "@mlc-ai/web-llm";
 import type { ChatSession, Message, EmbeddingRecord, SearchResult } from "@/app/types";
 import { EMBEDDING_MODEL } from "@/app/data/constants";
@@ -13,6 +14,7 @@ import {
 import { chunkText, searchEmbeddings } from "@/app/lib/embeddings";
 
 export function useEmbeddings() {
+  const { error: errorToast } = useToast();
   const [isEmbeddingReady, setIsEmbeddingReady] = useState(false);
   const [isIndexing, setIsIndexing] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
@@ -51,6 +53,7 @@ export function useEmbeddings() {
 
     promise.catch((err) => {
       console.error("[Embedding] Failed to load embedding model:", err);
+      errorToast("Failed to load embedding model.");
       embeddingPromiseRef.current = null;
     });
 
@@ -125,11 +128,12 @@ export function useEmbeddings() {
         await saveEmbeddings(records);
       } catch (err) {
         console.error("[Embedding] Failed to embed messages:", err);
+        errorToast("Failed to index messages for search.");
       } finally {
         setIsIndexing(false);
       }
     },
-    [getEmbeddingEngine],
+    [getEmbeddingEngine, errorToast],
   );
 
   /**
@@ -154,12 +158,13 @@ export function useEmbeddings() {
         return searchEmbeddings(queryVector, allEmbeddings, history, query);
       } catch (err) {
         console.error("[Embedding] Search failed:", err);
+        errorToast("Search failed. Please try again.");
         return [];
       } finally {
         setIsSearching(false);
       }
     },
-    [getEmbeddingEngine],
+    [getEmbeddingEngine, errorToast],
   );
 
   /**

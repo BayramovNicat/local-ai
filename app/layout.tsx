@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans, Fira_Code } from "next/font/google";
 import "./globals.css";
+import { ToastProvider } from "./components/ui/toast";
 
 const plusJakarta = Plus_Jakarta_Sans({
   variable: "--font-sans",
@@ -50,7 +51,9 @@ export default function RootLayout({
       lang="en"
       className={`${plusJakarta.variable} ${firaCode.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <ToastProvider>{children}</ToastProvider>
+      </body>
     </html>
   );
 }

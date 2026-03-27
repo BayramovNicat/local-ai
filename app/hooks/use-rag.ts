@@ -20,12 +20,14 @@ import type {
 } from "@/app/types";
 import type { MLCEngineInterface } from "@mlc-ai/web-llm";
 import { useCallback, useState } from "react";
+import { useToast } from "@/app/components/ui/toast";
 
 export function useRag(
   getEmbeddingEngine: () => Promise<MLCEngineInterface>,
   getEmbeddingEngineIfReady: () => MLCEngineInterface | null,
   initEmbeddingEngine: () => void,
 ) {
+  const { error: errorToast } = useToast();
   const [documents, setDocuments] = useState<DocType[]>([]);
   const [isUploading, setIsUploading] = useState(false);
 
@@ -113,11 +115,12 @@ export function useRag(
         );
       } catch (err) {
         console.error("[RAG] Failed to upload document:", err);
+        errorToast(`Failed to process document: ${file.name}`);
       } finally {
         setIsUploading(false);
       }
     },
-    [getEmbeddingEngine, initEmbeddingEngine],
+    [getEmbeddingEngine, initEmbeddingEngine, errorToast],
   );
 
   /**
@@ -186,10 +189,11 @@ export function useRag(
         };
       } catch (err) {
         console.error("[RAG] Failed to get context:", err);
+        errorToast("Failed to retrieve context from documents.");
         return { docContext: "", convContext: "" };
       }
     },
-    [getEmbeddingEngineIfReady],
+    [getEmbeddingEngineIfReady, errorToast],
   );
 
   /**
@@ -202,8 +206,9 @@ export function useRag(
       setDocuments((prev) => prev.filter((d) => d.id !== docId));
     } catch (err) {
       console.error("[RAG] Failed to remove document:", err);
+      errorToast("Failed to remove document.");
     }
-  }, []);
+  }, [errorToast]);
 
   /**
    * Cleanup all documents for a chat.
@@ -214,8 +219,9 @@ export function useRag(
       setDocuments([]);
     } catch (err) {
       console.error("[RAG] Failed to cleanup documents:", err);
+      errorToast("Failed to cleanup documents.");
     }
-  }, []);
+  }, [errorToast]);
 
   return {
     documents,

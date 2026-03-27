@@ -8,6 +8,7 @@ import {
 import type { Attachment, ChatSession, Message } from "@/app/types";
 import type { MLCEngineInterface } from "@mlc-ai/web-llm";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useToast } from "@/app/components/ui/toast";
 
 export function useChat(
   waitForEngine: () => Promise<MLCEngineInterface>,
@@ -17,6 +18,7 @@ export function useChat(
     history: ChatSession[],
   ) => Promise<{ docContext: string; convContext: string }>,
 ) {
+  const { error: errorToast } = useToast();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [attachments, setAttachments] = useState<Attachment[]>([]);
@@ -141,10 +143,13 @@ export function useChat(
     setHistory((prev) => [newSession, ...prev]);
     setActiveChatId(id);
     await saveChatToDB(id, { title: newSession.title, messages: [] }).catch(
-      console.error,
+      (err) => {
+        console.error(err);
+        errorToast("Failed to save new chat to database.");
+      },
     );
     return id;
-  }, []);
+  }, [errorToast]);
 
   const handleSend = useCallback(async () => {
     const text = input.trim();
@@ -253,6 +258,7 @@ export function useChat(
       }
     } catch (err) {
       console.error(err);
+      errorToast("Failed to generate response. Please check WebGPU support.");
       setMessages((prev) =>
         prev.map((m) =>
           m.id === assistantId
@@ -262,7 +268,7 @@ export function useChat(
       );
     } finally {
       setIsStreaming(false);
-      updateHistory(currentChatId!, messagesRef.current);
+      if (currentChatId) updateHistory(currentChatId, messagesRef.current);
     }
   }, [
     input,
@@ -274,6 +280,7 @@ export function useChat(
     history,
     createChat,
     updateHistory,
+    errorToast,
   ]);
 
   const stopGenerating = useCallback(async () => {
