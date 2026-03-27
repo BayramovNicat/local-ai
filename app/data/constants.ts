@@ -35,7 +35,20 @@ export const AVAILABLE_MODELS = [
 export const EMBEDDING_MODEL = "snowflake-arctic-embed-m-q0f32-MLC-b4";
 
 /**
+ * Model-specific configurations including context limits.
+ */
+export const MODEL_CONFIGS: Record<string, { maxContextChars: number }> = {
+  "Qwen2.5-1.5B-Instruct-q4f16_1-MLC": { maxContextChars: 2000 },
+  "Qwen2.5-7B-Instruct-q4f16_1-MLC": { maxContextChars: 8000 },
+  "Llama-3.2-1B-Instruct-q4f16_1-MLC": { maxContextChars: 2000 },
+  "Llama-3.1-8B-Instruct-q4f32_1-MLC": { maxContextChars: 12000 },
+  "Phi-3.5-mini-instruct-q4f16_1-MLC": { maxContextChars: 8000 },
+  "default": { maxContextChars: 1500 },
+};
+
+/**
  * Maximum number of characters allowed in the RAG context sent to the LLM.
+ * @deprecated Use MODEL_CONFIGS for dynamic context limits.
  */
 export const MAX_CONTEXT_CHARS = 1500;
 

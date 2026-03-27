@@ -22,7 +22,8 @@ self.onmessage = async (e: MessageEvent) => {
   }
 
   if (type === "custom-rag-context") {
-    const { query, queryVector, chatId, history } = payload;
+    const { query, queryVector, chatId, history, maxContextChars } = payload;
+    const limit = maxContextChars || MAX_CONTEXT_CHARS;
     try {
       const [docPool, convPool] = await Promise.all([
         loadDocEmbeddingsByChatId(chatId),
@@ -40,7 +41,7 @@ self.onmessage = async (e: MessageEvent) => {
       let docContext = "";
       for (const chunk of scoredDocs) {
         if (chunk.score < RAG_SCORE_THRESHOLD_DOCS) break;
-        if (docContext.length + chunk.text.length + 2 > MAX_CONTEXT_CHARS) break;
+        if (docContext.length + chunk.text.length + 2 > limit) break;
         docContext += chunk.text + "\n\n";
       }
 

@@ -6,6 +6,7 @@ import {
   EMBEDDING_BATCH_SIZE,
   RAG_SCORE_THRESHOLD_DOCS,
   RAG_SCORE_THRESHOLD_CONV,
+  MODEL_CONFIGS,
 } from "@/app/data/constants";
 import {
   deleteDocument as deleteDocFromDB,
@@ -34,6 +35,7 @@ export function useRag(
   getEmbeddingEngineIfReady: () => MLCEngineInterface | null,
   initEmbeddingEngine: () => void,
   callWorker: (type: string, payload: any) => Promise<any>,
+  selectedModel: string,
 ) {
   const { error: errorToast } = useToast();
   const [documents, setDocuments] = useState<DocType[]>([]);
@@ -155,12 +157,16 @@ export function useRag(
         });
         const queryVector = response.data[0].embedding;
 
+        // Get model-specific context limits
+        const config = MODEL_CONFIGS[selectedModel] || MODEL_CONFIGS.default;
+
         // Delegate context retrieval and scoring to worker
         return await callWorker("custom-rag-context", {
           query,
           queryVector,
           chatId,
-          history
+          history,
+          maxContextChars: config.maxContextChars,
         });
       } catch (err) {
         console.error("[RAG] Failed to get context:", err);
@@ -168,7 +174,7 @@ export function useRag(
         return { docContext: "", convContext: "" };
       }
     },
-    [getEmbeddingEngineIfReady, callWorker, errorToast],
+    [getEmbeddingEngineIfReady, callWorker, errorToast, selectedModel],
   );
 
   /**

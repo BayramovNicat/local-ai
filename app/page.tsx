@@ -58,7 +58,7 @@ export default function Home() {
     getContext,
     removeDocument,
     cleanupDocuments,
-  } = useRag(getEmbeddingEngine, getEmbeddingEngineIfReady, initEmbeddingEngine, callWorker);
+  } = useRag(getEmbeddingEngine, getEmbeddingEngineIfReady, initEmbeddingEngine, callWorker, selectedModel);
 
   const {
     messages,
