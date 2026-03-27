@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Pencil } from "lucide-react";
@@ -8,7 +9,7 @@ import { CopyButton } from "@/app/components/ui/copy-button";
 import { CodeBlock } from "./code-block";
 import { LoadingDots } from "./loading-dots";
 
-export function ChatMessage({
+export const ChatMessage = memo(function ChatMessage({
   message,
   accent,
   onEdit,
@@ -70,4 +71,4 @@ export function ChatMessage({
       </div>
     </div>
   );
-}
+});

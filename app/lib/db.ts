@@ -92,7 +92,7 @@ export async function deleteChat(id: string): Promise<void> {
 // ── Embedding CRUD ─────────────────────────────────────────
 
 // In-memory cache — avoids repeated full-table reads
-let _embeddingsCache: EmbeddingRecord[] | null = null;
+let _embeddingsCache: Map<string, EmbeddingRecord> | null = null;
 let _embeddedMsgIds: Set<string> | null = null;
 
 function invalidateEmbeddingsCache() {
@@ -112,13 +112,11 @@ export async function saveEmbeddings(
       store.put(rec);
     }
     tx.oncomplete = () => {
-      // Update cache incrementally instead of invalidating
+      // Update cache incrementally — O(n) for batch size, not full cache
       if (_embeddingsCache) {
-        const newIds = new Set(records.map((r) => r.id));
-        _embeddingsCache = [
-          ..._embeddingsCache.filter((r) => !newIds.has(r.id)),
-          ...records,
-        ];
+        for (const rec of records) {
+          _embeddingsCache.set(rec.id, rec);
+        }
       }
       if (_embeddedMsgIds) {
         for (const rec of records) {
@@ -132,14 +130,15 @@ export async function saveEmbeddings(
 }
 
 export async function loadAllEmbeddings(): Promise<EmbeddingRecord[]> {
-  if (_embeddingsCache) return _embeddingsCache;
+  if (_embeddingsCache) return Array.from(_embeddingsCache.values());
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_EMBEDDINGS, "readonly");
     const req = tx.objectStore(STORE_EMBEDDINGS).getAll();
     req.onsuccess = () => {
-      _embeddingsCache = req.result ?? [];
-      resolve(_embeddingsCache);
+      const records: EmbeddingRecord[] = req.result ?? [];
+      _embeddingsCache = new Map(records.map((r) => [r.id, r]));
+      resolve(records);
     };
     req.onerror = () => reject(req.error);
   });

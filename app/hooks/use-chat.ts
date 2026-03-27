@@ -314,13 +314,10 @@ export function useChat(
     [activeChatId],
   );
 
-  const editMessage = useCallback(
-    (id: string) => {
-      const found = messages.find((m) => m.id === id);
-      if (found) setInput(found.content);
-    },
-    [messages],
-  );
+  const editMessage = useCallback((id: string) => {
+    const found = messagesRef.current.find((m) => m.id === id);
+    if (found) setInput(found.content);
+  }, []);
 
   return {
     messages,
