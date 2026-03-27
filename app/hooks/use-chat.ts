@@ -128,7 +128,7 @@ export function useChat(
   }, []);
 
   const createChat = useCallback(async (title?: string) => {
-    const id = Date.now().toString();
+    const id = crypto.randomUUID();
     const newSession: ChatSession = {
       id,
       title: title
@@ -157,13 +157,13 @@ export function useChat(
     if (!currentChatId) currentChatId = await createChat(text);
 
     const userMsg: Message = {
-      id: Date.now().toString(),
+      id: crypto.randomUUID(),
       role: "user",
       content: text,
       attachments: attachments.length > 0 ? [...attachments] : undefined,
     };
 
-    const assistantId = (Date.now() + 1).toString();
+    const assistantId = crypto.randomUUID();
     const assistantMsg: Message = {
       id: assistantId,
       role: "assistant",

@@ -157,7 +157,7 @@ export function useRag(
         let docContext = "";
         for (const chunk of scoredDocs) {
           if (chunk.score < 0.2) break;
-          if (docContext.length + chunk.text.length > MAX_CONTEXT_CHARS) break;
+          if (docContext.length + chunk.text.length + 2 > MAX_CONTEXT_CHARS) break;
           docContext += chunk.text + "\n\n";
         }
 
@@ -175,8 +175,9 @@ export function useRag(
         const MAX_CONV_CHARS = 1000;
         for (const chunk of scoredConvs) {
           if (chunk.score < 0.3) break;
-          if (convContext.length + chunk.text.length > MAX_CONV_CHARS) break;
-          convContext += `[From: ${chunk.chatTitle}] ${chunk.text}\n\n`;
+          const entry = `[From: ${chunk.chatTitle}] ${chunk.text}\n\n`;
+          if (convContext.length + entry.length > MAX_CONV_CHARS) break;
+          convContext += entry;
         }
 
         return {

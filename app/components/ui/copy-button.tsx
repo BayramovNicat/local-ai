@@ -7,9 +7,15 @@ export function CopyButton({ text, size = 13 }: { text: string; size?: number })
   const [copied, setCopied] = useState(false);
 
   function handleCopy() {
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
+    navigator.clipboard.writeText(text).then(
+      () => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1500);
+      },
+      () => {
+        console.error("[Copy] Clipboard access denied");
+      },
+    );
   }
 
   return (

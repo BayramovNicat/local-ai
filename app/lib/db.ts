@@ -229,7 +229,6 @@ export async function loadConvEmbeddingsExcludingChat(
       IDBKeyRange.lowerBound(excludeChatId, true),
     ];
 
-    let completed = 0;
     for (const range of ranges) {
       const req = index.openCursor(range);
       req.onsuccess = (e) => {
@@ -243,10 +242,7 @@ export async function loadConvEmbeddingsExcludingChat(
       };
     }
 
-    tx.oncomplete = () => {
-      completed++;
-      if (completed >= 1) resolve(results);
-    };
+    tx.oncomplete = () => resolve(results);
     tx.onerror = () => reject(tx.error);
   });
 }
