@@ -46,7 +46,7 @@ export function Sidebar({
             <button
               onClick={onNewChat}
               className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl transition-colors text-sm font-medium cursor-pointer border truncate whitespace-nowrap"
-              style={{ borderColor: `${accent}4D`, color: accent }}
+              style={{ borderColor: "color-mix(in srgb, var(--accent) 30%, transparent)", color: "var(--accent)" }}
             >
               <Plus size={16} className="shrink-0" />
               <span className="truncate">New Chat</span>
@@ -64,7 +64,6 @@ export function Sidebar({
           <SidebarList
             history={history}
             activeChatId={activeChatId}
-            accent={accent}
             onSelectChat={onSelectChat}
             onDeleteChat={onDeleteChat}
             scrollContainerRef={scrollRef}

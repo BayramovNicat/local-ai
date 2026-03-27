@@ -217,7 +217,6 @@ export default function Home() {
     >
       <Sidebar
         isOpen={isSidebarOpen}
-        accent={accentColor}
         history={history}
         activeChatId={activeChatId}
         onNewChat={newChat}
@@ -275,10 +274,8 @@ export default function Home() {
               <MessageList
                 key={activeChatId || "new"}
                 messages={messages}
-                accent={accentColor}
                 onEdit={editMessage}
                 scrollContainerRef={scrollContainerRef}
-                chatId={activeChatId}
               />
             )}
           </div>

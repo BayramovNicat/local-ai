@@ -8,7 +8,6 @@ import type { ChatSession } from "@/app/types";
 interface SidebarListProps {
   history: ChatSession[];
   activeChatId: string | null;
-  accent: string;
   onSelectChat: (id: string) => void;
   onDeleteChat: (id: string) => void;
   scrollContainerRef: React.RefObject<HTMLDivElement | null>;
@@ -20,7 +19,6 @@ const LOAD_MORE_INCREMENT = 40;
 export function SidebarList({
   history,
   activeChatId,
-  accent,
   onSelectChat,
   onDeleteChat,
   scrollContainerRef,
@@ -68,7 +66,7 @@ export function SidebarList({
             contentVisibility: "auto",
             containIntrinsicSize: "auto 40px",
             ...(activeChatId === session.id
-              ? { borderColor: `${accent}4D`, color: "#ffffff" }
+              ? { borderColor: "color-mix(in srgb, var(--accent) 30%, transparent)", color: "#ffffff" }
               : {}),
           }}
           onClick={() => onSelectChat(session.id)}

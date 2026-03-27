@@ -6,10 +6,8 @@ import type { Message } from "@/app/types";
 
 interface MessageListProps {
   messages: Message[];
-  accent: string;
   onEdit: (id: string) => void;
   scrollContainerRef: React.RefObject<HTMLElement | null>;
-  chatId: string | null;
 }
 
 const INITIAL_VISIBLE = 30;
@@ -17,7 +15,6 @@ const LOAD_MORE_INCREMENT = 30;
 
 export function MessageList({
   messages,
-  accent,
   onEdit,
   scrollContainerRef,
 }: MessageListProps) {
@@ -74,7 +71,6 @@ export function MessageList({
         <ChatMessage
           key={msg.id}
           message={msg}
-          accent={accent}
           onEdit={onEdit}
         />
       ))}

@@ -11,11 +11,9 @@ import { LoadingDots } from "./loading-dots";
 
 export const ChatMessage = memo(function ChatMessage({
   message,
-  accent,
   onEdit,
 }: {
   message: Message;
-  accent: string;
   onEdit?: (id: string) => void;
 }) {
   const isUser = message.role === "user";
@@ -33,7 +31,7 @@ export const ChatMessage = memo(function ChatMessage({
       >
         <div
           className={`rounded-2xl px-4 py-3 break-all overflow-hidden ${isUser ? "text-white border" : "text-neutral-200"}`}
-          style={isUser ? { borderColor: `${accent}4D` } : undefined}
+          style={isUser ? { borderColor: "color-mix(in srgb, var(--accent) 30%, transparent)" } : undefined}
         >
           {message.attachments && message.attachments.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-2">
