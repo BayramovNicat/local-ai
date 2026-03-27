@@ -1,20 +1,24 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import type { Document as DocType, EmbeddingRecord, ChatSession } from "@/app/types";
 import { EMBEDDING_MODEL, MAX_CONTEXT_CHARS } from "@/app/data/constants";
 import {
-  saveDocument,
-  getDocumentsByChatId,
   deleteDocument as deleteDocFromDB,
   deleteDocumentsByChatId,
-  saveEmbeddings,
-  loadAllEmbeddings,
   deleteEmbeddingsByDocumentId,
+  getDocumentsByChatId,
+  loadAllEmbeddings,
+  saveDocument,
+  saveEmbeddings,
 } from "@/app/lib/db";
 import { extractText } from "@/app/lib/documents";
-import { chunkText, cosineSimilarity } from "@/app/lib/embeddings";
+import { chunkText, hybridScore } from "@/app/lib/embeddings";
+import type {
+  ChatSession,
+  Document as DocType,
+  EmbeddingRecord,
+} from "@/app/types";
 import type { MLCEngineInterface } from "@mlc-ai/web-llm";
+import { useCallback, useState } from "react";
 
 export function useRag(
   getEmbeddingEngine: () => Promise<MLCEngineInterface>,
@@ -137,42 +141,42 @@ export function useRag(
 
         // Load all embeddings
         const allEmbeddings = await loadAllEmbeddings();
-        
+
         // 1. Document Context (current chat only)
         const docPool = allEmbeddings.filter(
-          (e) => e.chatId === chatId && e.documentId
+          (e) => e.chatId === chatId && e.documentId,
         );
         const scoredDocs = docPool
           .map((rec) => ({
             text: rec.text,
-            score: cosineSimilarity(queryVector, rec.vector),
+            score: hybridScore(query, rec.text, queryVector, rec.vector),
           }))
           .sort((a, b) => b.score - a.score);
 
         let docContext = "";
         for (const chunk of scoredDocs) {
-          if (chunk.score < 0.3) break;
+          if (chunk.score < 0.2) break;
           if (docContext.length + chunk.text.length > MAX_CONTEXT_CHARS) break;
           docContext += chunk.text + "\n\n";
         }
 
         // 2. Conversation Context (other chats)
-        const chatMap = new Map(history.map(s => [s.id, s.title]));
+        const chatMap = new Map(history.map((s) => [s.id, s.title]));
         const convPool = allEmbeddings.filter(
-          (e) => e.chatId !== chatId && !e.documentId
+          (e) => e.chatId !== chatId && !e.documentId,
         );
         const scoredConvs = convPool
           .map((rec) => ({
             text: rec.text,
             chatTitle: chatMap.get(rec.chatId) || "Other Chat",
-            score: cosineSimilarity(queryVector, rec.vector),
+            score: hybridScore(query, rec.text, queryVector, rec.vector),
           }))
           .sort((a, b) => b.score - a.score);
 
         let convContext = "";
-        const MAX_CONV_CHARS = 1000; // slightly smaller limit for conversations
+        const MAX_CONV_CHARS = 1000;
         for (const chunk of scoredConvs) {
-          if (chunk.score < 0.4) break; // stricter threshold for cross-chat context
+          if (chunk.score < 0.3) break;
           if (convContext.length + chunk.text.length > MAX_CONV_CHARS) break;
           convContext += `[From: ${chunk.chatTitle}] ${chunk.text}\n\n`;
         }

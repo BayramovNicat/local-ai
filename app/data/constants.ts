@@ -23,7 +23,7 @@ export const AVAILABLE_MODELS = [
   "Phi-3.5-mini-instruct-q4f16_1-MLC",
 ];
 
-export const EMBEDDING_MODEL = "snowflake-arctic-embed-s-q0f32-MLC-b4";
+export const EMBEDDING_MODEL = "snowflake-arctic-embed-m-q0f32-MLC-b4";
 
 export const MAX_CONTEXT_CHARS = 1500;
 export const SUPPORTED_DOC_TYPES = ".txt,.md,.pdf";

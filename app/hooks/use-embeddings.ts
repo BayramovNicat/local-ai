@@ -171,7 +171,7 @@ export function useEmbeddings() {
         const queryVector = response.data[0].embedding;
         const allEmbeddings = await loadAllEmbeddings();
 
-        return searchEmbeddings(queryVector, allEmbeddings, history);
+        return searchEmbeddings(queryVector, allEmbeddings, history, query);
       } catch (err) {
         console.error("[Embedding] Search failed:", err);
         return [];
