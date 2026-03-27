@@ -64,7 +64,7 @@ export function useEmbeddings() {
 
   const callWorker = useCallback(async (type: string, payload: unknown): Promise<unknown> => {
     if (!workerRef.current) throw new Error("Worker not initialized");
-    const id = Math.random().toString(36).substring(7);
+    const id = crypto.randomUUID();
     
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
@@ -172,6 +172,7 @@ export function useEmbeddings() {
               id: `${message.id}_chunk${chunkIdx}`,
               chatId,
               messageId: message.id,
+              role: message.role,
               text: chunk,
               vector: response.data[j].embedding,
               timestamp: Date.now(),
@@ -212,10 +213,11 @@ export function useEmbeddings() {
 
         const queryVector = response.data[0].embedding;
 
-        // Perform search in worker
+        // Perform search in worker with lightweight metadata
+        const historyMetadata = Object.fromEntries(history.map(s => [s.id, s.title]));
         return (await callWorker("custom-search", {
           queryVector,
-          history,
+          historyMetadata,
           query,
           topK: 10
         })) as SearchResult[];

@@ -93,7 +93,13 @@ export function useEngine(selectedModel: string) {
 
   const waitForEngine = useCallback(async (): Promise<MLCEngineInterface> => {
     if (engineRef.current) return engineRef.current;
-    return enginePromiseRef.current!;
+    if (!enginePromiseRef.current) throw new Error("Engine not initializing");
+    
+    const engine = await enginePromiseRef.current;
+    if (engineRef.current !== engine) {
+      throw new Error("Engine was unloaded or replaced during initialization.");
+    }
+    return engine;
   }, []);
 
   return {

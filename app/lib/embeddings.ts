@@ -25,18 +25,11 @@ export function cosineSimilarity(a: number[], b: number[]): number {
 
 /**
  * Keyword match score — fraction of query terms found in text.
+ * Optimized to accept pre-lowercased query terms and pre-lowercased text.
  */
-export function keywordScore(queryOrTerms: string | string[], text: string): number {
-  const queryTerms = Array.isArray(queryOrTerms) 
-    ? queryOrTerms 
-    : queryOrTerms
-        .toLowerCase()
-        .split(/\s+/)
-        .filter((t) => t.length > 1);
-  
+export function keywordScore(queryTerms: string[], lowerText: string): number {
   if (queryTerms.length === 0) return 0;
 
-  const lowerText = text.toLowerCase();
   let matched = 0;
   for (const term of queryTerms) {
     if (lowerText.includes(term)) matched++;
@@ -48,59 +41,59 @@ export function keywordScore(queryOrTerms: string | string[], text: string): num
  * Combine semantic + keyword scores.
  */
 export function hybridScore(
-  queryOrTerms: string | string[],
-  text: string,
+  queryTerms: string[],
+  lowerText: string,
   queryVector: number[],
   docVector: number[],
 ): number {
   return (
     cosineSimilarity(queryVector, docVector) * 0.5 +
-    keywordScore(queryOrTerms, text) * 0.5
+    keywordScore(queryTerms, lowerText) * 0.5
   );
 }
 
 /**
  * Hybrid search: combines semantic similarity with keyword matching.
  * Returns top-K results enriched with chat metadata.
+ * historyMetadata is a map of chatId -> title.
  */
 export function searchEmbeddings(
   queryVector: number[],
   records: EmbeddingRecord[],
-  history: ChatSession[],
+  historyMetadata: Map<string, string> | Record<string, string>,
   query: string,
   topK = 10,
 ): SearchResult[] {
-  const chatMap = new Map(history.map((s) => [s.id, s]));
   const queryTerms = query
     .toLowerCase()
     .split(/\s+/)
     .filter((t) => t.length > 1);
 
+  const isMap = historyMetadata instanceof Map;
+  const getTitle = (id: string) => isMap ? historyMetadata.get(id) : historyMetadata[id];
+
   const scored = records
     .map((rec) => {
-      const session = chatMap.get(rec.chatId);
-      if (!session) return null;
+      const chatTitle = getTitle(rec.chatId);
+      if (!chatTitle) return null;
 
+      const lowerText = rec.text.toLowerCase();
       const semantic = cosineSimilarity(queryVector, rec.vector);
-      const keyword = keywordScore(queryTerms, rec.text);
+      const keyword = keywordScore(queryTerms, lowerText);
 
       // Hybrid: semantic provides base relevance, keyword boosts exact matches
       const score = semantic * 0.5 + keyword * 0.5;
       if (score < 0.1) return null;
 
-      const isDocument = !!rec.documentId;
-      const msg = isDocument
-        ? undefined
-        : session.messages.find((m) => m.id === rec.messageId);
-
       return {
         chatId: rec.chatId,
-        chatTitle: session.title,
+        chatTitle,
         messageId: rec.messageId,
         ...(rec.documentId && { documentId: rec.documentId }),
         text: rec.text,
         score,
-        role: (isDocument ? "document" : (msg?.role ?? "user")) as
+        // We now expect the role to be in the record or default to user
+        role: (rec.documentId ? "document" : (rec.role ?? "user")) as
           | "user"
           | "assistant"
           | "document",

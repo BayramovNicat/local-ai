@@ -17,10 +17,10 @@ self.onmessage = async (e: MessageEvent) => {
   }
 
   if (type === "custom-search") {
-    const { queryVector, history, query, topK } = payload;
+    const { queryVector, historyMetadata, query, topK } = payload;
     try {
       const allEmbeddings = await loadAllEmbeddings();
-      const results = searchEmbeddings(queryVector, allEmbeddings, history, query, topK);
+      const results = searchEmbeddings(queryVector, allEmbeddings, historyMetadata, query, topK);
       self.postMessage({ type: "custom-search-results", payload: results, id: e.data.id });
     } catch (err) {
       self.postMessage({ type: "custom-search-error", payload: String(err), id: e.data.id });
@@ -28,7 +28,7 @@ self.onmessage = async (e: MessageEvent) => {
     return;
   }
 if (type === "custom-rag-context") {
-  const { query, queryVector, chatId, history, maxContextChars } = payload;
+  const { query, queryVector, chatId, historyMetadata, maxContextChars } = payload;
   const limit = maxContextChars || MAX_CONTEXT_CHARS;
 
   // Pre-calculate query terms for hybrid scoring
@@ -38,11 +38,6 @@ if (type === "custom-rag-context") {
     .filter((t: string) => t.length > 1);
 
   try {
-    // NOTE: We DO NOT call loadAllEmbeddings() here. 
-    // loadDocEmbeddingsByChatId and loadConvEmbeddingsExcludingChat 
-    // will use IndexedDB indexes if the cache is null, which is 
-    // much more memory efficient for large databases.
-
     const [docPool, convPool] = await Promise.all([
       loadDocEmbeddingsByChatId(chatId),
       loadConvEmbeddingsExcludingChat(chatId),
@@ -51,10 +46,13 @@ if (type === "custom-rag-context") {
 
       // Document Context
       const scoredDocs = docPool
-        .map((rec) => ({
-          text: rec.text,
-          score: hybridScore(queryTerms, rec.text, queryVector, rec.vector),
-        }))
+        .map((rec) => {
+          const lowerText = rec.text.toLowerCase();
+          return {
+            text: rec.text,
+            score: hybridScore(queryTerms, lowerText, queryVector, rec.vector),
+          };
+        })
         .sort((a, b) => b.score - a.score);
 
       let docContext = "";
@@ -65,13 +63,15 @@ if (type === "custom-rag-context") {
       }
 
       // Conversation Context
-      const chatMap = new Map(history.map((s: ChatSession) => [s.id, s.title]));
       const scoredConvs = convPool
-        .map((rec) => ({
-          text: rec.text,
-          chatTitle: chatMap.get(rec.chatId) || "Other Chat",
-          score: hybridScore(queryTerms, rec.text, queryVector, rec.vector),
-        }))
+        .map((rec) => {
+          const lowerText = rec.text.toLowerCase();
+          return {
+            text: rec.text,
+            chatTitle: historyMetadata[rec.chatId] || "Other Chat",
+            score: hybridScore(queryTerms, lowerText, queryVector, rec.vector),
+          };
+        })
         .sort((a, b) => b.score - a.score);
 
       let convContext = "";

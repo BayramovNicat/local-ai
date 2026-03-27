@@ -11,7 +11,7 @@ export function MessageInput({
   input,
   setInput,
   attachments,
-  setAttachments,
+  onRemoveAttachment,
   accent,
   isStreaming,
   onSend,
@@ -26,7 +26,7 @@ export function MessageInput({
   input: string;
   setInput: (v: string) => void;
   attachments: Attachment[];
-  setAttachments: React.Dispatch<React.SetStateAction<Attachment[]>>;
+  onRemoveAttachment: (id: string) => void;
   accent: string;
   isStreaming: boolean;
   onSend: () => void;
@@ -89,11 +89,7 @@ export function MessageInput({
                     className="w-16 h-16 rounded-lg object-cover"
                   />
                   <button
-                    onClick={() =>
-                      setAttachments((prev) =>
-                        prev.filter((a) => a.id !== att.id),
-                      )
-                    }
+                    onClick={() => onRemoveAttachment(att.id)}
                     className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-neutral-800 text-neutral-400 hover:text-white flex items-center justify-center opacity-0 group-hover/att:opacity-100 transition-opacity cursor-pointer"
                   >
                     <X size={10} />

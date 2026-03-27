@@ -75,6 +75,7 @@ export default function Home() {
     deleteChat: deleteChatOriginal,
     createChat,
     editMessage,
+    removeAttachment,
     isStreaming,
     stopGenerating,
   } = useChat(waitForEngine, getContext);
@@ -306,7 +307,7 @@ export default function Home() {
             input={input}
             setInput={setInput}
             attachments={attachments}
-            setAttachments={setAttachments}
+            onRemoveAttachment={removeAttachment}
             accent={accentColor}
             isStreaming={isStreaming}
             onSend={handleSend}

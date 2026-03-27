@@ -100,11 +100,15 @@ export function restoreChatFromSave(chat: ChatSession, oldChat?: ChatSession): C
       return {
         ...msg,
         attachments: msg.attachments?.map((att) => {
+          // If already has blob URL, keep it
+          if (att.url.startsWith("blob:")) return att;
+
           const oldAtt = oldMsg?.attachments?.find((a) => a.id === att.id);
-          // If we already have a valid Blob URL for this attachment, REUSE it!
+          // If we already have a valid Blob URL for this attachment in old state, REUSE it!
           if (oldAtt && oldAtt.url.startsWith("blob:")) {
             return { ...att, url: oldAtt.url };
           }
+          // Only create if we have a blob and no URL
           return {
             ...att,
             url: att.blob ? URL.createObjectURL(att.blob) : att.url
@@ -129,7 +133,7 @@ export async function saveChat(
   });
 }
 
-export async function loadAllChats(): Promise<ChatSession[]> {
+export async function loadAllChats(restoreUrls = false): Promise<ChatSession[]> {
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_CHATS, "readonly");
@@ -140,7 +144,7 @@ export async function loadAllChats(): Promise<ChatSession[]> {
       const keys = keysReq.result as string[];
       const vals = valsReq.result as Omit<ChatSession, "id">[];
       const chats = keys.map((id, i) => ({ id, ...vals[i] }));
-      resolve(chats.map((c) => restoreChatFromSave(c)));
+      resolve(restoreUrls ? chats.map((c) => restoreChatFromSave(c)) : chats as ChatSession[]);
     };
     tx.onerror = () => reject(tx.error);
   });
@@ -296,15 +300,11 @@ export async function deleteEmbeddingsByDocumentId(
 
 /**
  * Load document embeddings for a specific chat (uses chatId index).
+ * We ALWAYS use IndexedDB index here because it's O(log N) vs O(N) cache filtering.
  */
 export async function loadDocEmbeddingsByChatId(
   chatId: string,
 ): Promise<EmbeddingRecord[]> {
-  if (_embeddingsCache) {
-    return Array.from(_embeddingsCache.values()).filter(
-      (r) => r.chatId === chatId && !!r.documentId,
-    );
-  }
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_EMBEDDINGS, "readonly");
@@ -320,15 +320,11 @@ export async function loadDocEmbeddingsByChatId(
 /**
  * Load message embeddings from all chats except the given one (for conversation memory).
  * Uses two index range queries to skip the excluded chatId entirely.
+ * ALWAYS uses IndexedDB indexes for better scaling.
  */
 export async function loadConvEmbeddingsExcludingChat(
   excludeChatId: string,
 ): Promise<EmbeddingRecord[]> {
-  if (_embeddingsCache) {
-    return Array.from(_embeddingsCache.values()).filter(
-      (r) => r.chatId !== excludeChatId && !r.documentId,
-    );
-  }
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_EMBEDDINGS, "readonly");

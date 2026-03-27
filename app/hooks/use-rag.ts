@@ -102,6 +102,7 @@ export function useRag(
               chatId,
               messageId: "",
               documentId: docId,
+              role: "document",
               text: batch[j],
               vector: response.data[j].embedding,
               timestamp: Date.now(),
@@ -154,12 +155,13 @@ export function useRag(
         // Get model-specific context limits
         const config = MODEL_CONFIGS[selectedModel] || MODEL_CONFIGS.default;
 
-        // Delegate context retrieval and scoring to worker
+        // Delegate context retrieval and scoring to worker with lightweight metadata
+        const historyMetadata = Object.fromEntries(history.map(s => [s.id, s.title]));
         return (await callWorker("custom-rag-context", {
           query,
           queryVector,
           chatId,
-          history,
+          historyMetadata,
           maxContextChars: config.maxContextChars,
         })) as { docContext: string; convContext: string };
       } catch (err) {

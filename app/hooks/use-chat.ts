@@ -175,13 +175,11 @@ export function useChat(
       let updatedSession: ChatSession | undefined;
       
       setHistory((prev) => {
-        const updated = prev.map((s) =>
-          s.id === chatId
-            ? { ...s, messages: msgs, ...(title && { title }) }
-            : s,
-        );
-        updatedSession = updated.find((s) => s.id === chatId);
-        return updated;
+        const session = prev.find((s) => s.id === chatId);
+        if (!session) return prev;
+
+        updatedSession = { ...session, messages: msgs, ...(title && { title }) };
+        return prev.map((s) => (s.id === chatId ? updatedSession! : s));
       });
 
       // Move side effects OUT of the state updater
@@ -424,19 +422,24 @@ export function useChat(
 
   const newChat = useCallback(() => {
     setMessages([]);
-    setAttachments([]);
+    setAttachments((prev) => {
+      prev.forEach(a => URL.revokeObjectURL(a.url));
+      return [];
+    });
     setActiveChatId(null);
   }, []);
 
   const selectChat = useCallback(
     (id: string) => {
-      const session = history.find((s) => s.id === id);
+      const session = historyRef.current.find((s) => s.id === id);
       if (session) {
-        setMessages(session.messages);
+        const restored = restoreChatFromSave(session);
+        setMessages(restored.messages);
         setActiveChatId(id);
+        setHistory((prev) => prev.map((s) => (s.id === id ? restored : s)));
       }
     },
-    [history],
+    [],
   );
 
   const deleteChat = useCallback(
@@ -450,13 +453,21 @@ export function useChat(
         errorToast("Failed to delete chat from database.");
       });
       broadcastDelete(id);
-      if (activeChatId === id) {
+      if (activeChatIdRef.current === id) {
         setMessages([]);
         setActiveChatId(null);
       }
     },
-    [activeChatId, broadcastDelete, errorToast],
+    [broadcastDelete, errorToast],
   );
+
+  const removeAttachment = useCallback((id: string) => {
+    setAttachments((prev) => {
+      const att = prev.find((a) => a.id === id);
+      if (att) URL.revokeObjectURL(att.url);
+      return prev.filter((a) => a.id !== id);
+    });
+  }, []);
 
   const editMessage = useCallback((id: string) => {
     const found = messagesRef.current.find((m) => m.id === id);
@@ -469,6 +480,7 @@ export function useChat(
     setInput,
     attachments,
     setAttachments,
+    removeAttachment,
     history,
     activeChatId,
     scrollContainerRef,

@@ -29,6 +29,7 @@ export interface EmbeddingRecord {
   chatId: string;
   messageId: string;
   documentId?: string;
+  role?: "user" | "assistant" | "document";
   text: string;
   vector: number[];
   timestamp: number;
