@@ -1,5 +1,7 @@
+import { useRef } from "react";
 import { MessageSquare, Plus, Trash2 } from "lucide-react";
 import { Tooltip } from "@/app/components/ui/tooltip";
+import { SidebarList } from "./sidebar-list";
 import type { ChatSession } from "@/app/types";
 
 export function Sidebar({
@@ -21,6 +23,8 @@ export function Sidebar({
   onDeleteChat: (id: string) => void;
   onClose: () => void;
 }) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+
   return (
     <>
       {isOpen && (
@@ -50,40 +54,21 @@ export function Sidebar({
           </Tooltip>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-3 space-y-1">
+        <div 
+          ref={scrollRef}
+          className="flex-1 overflow-y-auto p-3 space-y-1"
+        >
           <p className="px-2 py-1 text-xs font-medium text-neutral-500 uppercase tracking-wider truncate">
             History
           </p>
-          {history.map((session) => (
-            <div
-              key={session.id}
-              className={`group flex items-center gap-2 px-3 py-2.5 rounded-lg cursor-pointer transition-colors text-sm border min-w-0 ${
-                activeChatId === session.id
-                  ? ""
-                  : "border-transparent text-neutral-400 hover:bg-neutral-900 hover:text-neutral-200"
-              }`}
-              style={{
-                contentVisibility: "auto",
-                containIntrinsicSize: "auto 40px",
-                ...(activeChatId === session.id ? { borderColor: `${accent}4D`, color: "#ffffff" } : {}),
-              }}
-              onClick={() => onSelectChat(session.id)}
-            >
-              <MessageSquare size={14} className="shrink-0" />
-              <span className="truncate flex-1 min-w-0">{session.title}</span>
-              <Tooltip content="Delete Chat" position="right" className="inline-block">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDeleteChat(session.id);
-                  }}
-                  className="opacity-0 group-hover:opacity-100 transition-opacity text-neutral-500 hover:text-red-400 cursor-pointer shrink-0 py-1"
-                >
-                  <Trash2 size={13} />
-                </button>
-              </Tooltip>
-            </div>
-          ))}
+          <SidebarList
+            history={history}
+            activeChatId={activeChatId}
+            accent={accent}
+            onSelectChat={onSelectChat}
+            onDeleteChat={onDeleteChat}
+            scrollContainerRef={scrollRef}
+          />
         </div>
       </aside>
     </>
