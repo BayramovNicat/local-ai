@@ -1,5 +1,5 @@
 import { WebWorkerMLCEngineHandler } from "@mlc-ai/web-llm";
-import { loadAllEmbeddings, loadDocEmbeddingsByChatId, loadConvEmbeddingsExcludingChat } from "../lib/db";
+import { loadAllEmbeddings, loadDocEmbeddingsByChatId, loadConvEmbeddingsExcludingChat, invalidateEmbeddingsCache } from "../lib/db";
 import { searchEmbeddings, hybridScore } from "../lib/embeddings";
 import { RAG_SCORE_THRESHOLD_DOCS, MAX_CONTEXT_CHARS, RAG_SCORE_THRESHOLD_CONV } from "../data/constants";
 import type { ChatSession } from "../types";
@@ -10,6 +10,12 @@ self.onmessage = async (e: MessageEvent) => {
   const { type, payload } = e.data;
 
   // Intercept custom vector operations
+  if (type === "invalidate-cache") {
+    invalidateEmbeddingsCache();
+    self.postMessage({ type: "invalidate-cache-results", id: e.data.id });
+    return;
+  }
+
   if (type === "custom-search") {
     const { queryVector, history, query, topK } = payload;
     try {
@@ -25,6 +31,13 @@ self.onmessage = async (e: MessageEvent) => {
   if (type === "custom-rag-context") {
     const { query, queryVector, chatId, history, maxContextChars } = payload;
     const limit = maxContextChars || MAX_CONTEXT_CHARS;
+    
+    // Pre-calculate query terms for hybrid scoring
+    const queryTerms = query
+      .toLowerCase()
+      .split(/\s+/)
+      .filter((t: string) => t.length > 1);
+
     try {
       const [docPool, convPool] = await Promise.all([
         loadDocEmbeddingsByChatId(chatId),
@@ -35,7 +48,7 @@ self.onmessage = async (e: MessageEvent) => {
       const scoredDocs = docPool
         .map((rec) => ({
           text: rec.text,
-          score: hybridScore(query, rec.text, queryVector, rec.vector),
+          score: hybridScore(queryTerms, rec.text, queryVector, rec.vector),
         }))
         .sort((a, b) => b.score - a.score);
 
@@ -52,7 +65,7 @@ self.onmessage = async (e: MessageEvent) => {
         .map((rec) => ({
           text: rec.text,
           chatTitle: chatMap.get(rec.chatId) || "Other Chat",
-          score: hybridScore(query, rec.text, queryVector, rec.vector),
+          score: hybridScore(queryTerms, rec.text, queryVector, rec.vector),
         }))
         .sort((a, b) => b.score - a.score);
 

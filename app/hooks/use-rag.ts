@@ -113,6 +113,13 @@ export function useRag(
 
         await saveEmbeddings(records);
 
+        // Sync cache to worker
+        try {
+          await callWorker("invalidate-cache", {});
+        } catch (e) {
+          console.warn("[RAG] Failed to invalidate cache in worker:", e);
+        }
+
         // Update local state
         setDocuments((prev) => [...prev, doc]);
         console.log(
@@ -129,7 +136,7 @@ export function useRag(
         setIsUploading(false);
       }
     },
-    [getEmbeddingEngine, initEmbeddingEngine, errorToast],
+    [getEmbeddingEngine, initEmbeddingEngine, errorToast, callWorker],
   );
 
   /**

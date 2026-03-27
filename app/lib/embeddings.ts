@@ -19,11 +19,14 @@ export function cosineSimilarity(a: number[], b: number[]): number {
 /**
  * Keyword match score — fraction of query terms found in text.
  */
-export function keywordScore(query: string, text: string): number {
-  const queryTerms = query
-    .toLowerCase()
-    .split(/\s+/)
-    .filter((t) => t.length > 1);
+export function keywordScore(queryOrTerms: string | string[], text: string): number {
+  const queryTerms = Array.isArray(queryOrTerms) 
+    ? queryOrTerms 
+    : queryOrTerms
+        .toLowerCase()
+        .split(/\s+/)
+        .filter((t) => t.length > 1);
+  
   if (queryTerms.length === 0) return 0;
 
   const lowerText = text.toLowerCase();
@@ -38,14 +41,14 @@ export function keywordScore(query: string, text: string): number {
  * Combine semantic + keyword scores.
  */
 export function hybridScore(
-  query: string,
+  queryOrTerms: string | string[],
   text: string,
   queryVector: number[],
   docVector: number[],
 ): number {
   return (
     cosineSimilarity(queryVector, docVector) * 0.5 +
-    keywordScore(query, text) * 0.5
+    keywordScore(queryOrTerms, text) * 0.5
   );
 }
 
@@ -61,6 +64,10 @@ export function searchEmbeddings(
   topK = 10,
 ): SearchResult[] {
   const chatMap = new Map(history.map((s) => [s.id, s]));
+  const queryTerms = query
+    .toLowerCase()
+    .split(/\s+/)
+    .filter((t) => t.length > 1);
 
   const scored = records
     .map((rec) => {
@@ -68,7 +75,7 @@ export function searchEmbeddings(
       if (!session) return null;
 
       const semantic = cosineSimilarity(queryVector, rec.vector);
-      const keyword = keywordScore(query, rec.text);
+      const keyword = keywordScore(queryTerms, rec.text);
 
       // Hybrid: semantic provides base relevance, keyword boosts exact matches
       const score = semantic * 0.5 + keyword * 0.5;
@@ -169,8 +176,15 @@ export function chunkText(
     let chunk = initialChunks[i];
     if (i > 0) {
       const prev = initialChunks[i - 1];
+      // Take the last 'overlap' characters from previous chunk
       const overlapText = prev.slice(-overlap);
-      chunk = overlapText + chunk;
+      // Ensure we don't exceed maxLength by prepending overlap
+      // We take only as much as fits within maxLength
+      const availableSpace = maxLength - chunk.length;
+      if (availableSpace > 0) {
+        const actualOverlap = overlapText.slice(-availableSpace);
+        chunk = actualOverlap + chunk;
+      }
     }
     overlapped.push(chunk);
   }

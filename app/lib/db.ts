@@ -179,7 +179,7 @@ export async function deleteChat(id: string): Promise<void> {
 let _embeddingsCache: Map<string, EmbeddingRecord> | null = null;
 let _embeddedMsgIds: Set<string> | null = null;
 
-function invalidateEmbeddingsCache() {
+export function invalidateEmbeddingsCache() {
   _embeddingsCache = null;
   _embeddedMsgIds = null;
 }

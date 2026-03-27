@@ -264,8 +264,26 @@ export function useChat(
           content: `Use this context for a better response:\n\n${systemPrompt.trim()}`,
         });
       }
+      const MAX_HISTORY_MSGS = 15;
+      const MAX_HISTORY_CHARS = 4000;
+      let totalChars = 0;
+      const historyToKeep = [];
+
+      // Always include userMsg
+      totalChars += userMsg.content.length;
+      
+      // Iterate backwards through previous messages
+      for (let i = messages.length - 1; i >= 0; i--) {
+        const msg = messages[i];
+        if (historyToKeep.length >= MAX_HISTORY_MSGS) break;
+        if (totalChars + msg.content.length > MAX_HISTORY_CHARS) break;
+        
+        historyToKeep.unshift(msg);
+        totalChars += msg.content.length;
+      }
+
       engineMsgs.push(
-        ...messages
+        ...historyToKeep
           .concat(userMsg)
           .map((m) => ({ role: m.role, content: m.content })),
       );
@@ -274,15 +292,31 @@ export function useChat(
         messages: engineMsgs,
         stream: true,
       });
+
       let currentText = "";
+      let lastUpdateTime = Date.now();
+      const UPDATE_INTERVAL = 50; // ms
+
       for await (const chunk of chunks) {
         currentText += chunk.choices[0]?.delta.content || "";
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === assistantId ? { ...m, content: currentText } : m,
-          ),
-        );
+        
+        const now = Date.now();
+        if (now - lastUpdateTime > UPDATE_INTERVAL) {
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === assistantId ? { ...m, content: currentText } : m,
+            ),
+          );
+          lastUpdateTime = now;
+        }
       }
+
+      // Final update to ensure we have the complete message
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === assistantId ? { ...m, content: currentText } : m,
+        ),
+      );
 
       if (isFirstMessage) {
         try {

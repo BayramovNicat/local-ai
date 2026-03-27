@@ -147,6 +147,10 @@ export function useEmbeddings() {
         }
 
         await saveEmbeddings(records);
+        // Sync cache to worker
+        if (workerRef.current) {
+          await callWorker("invalidate-cache", {});
+        }
       } catch (err) {
         console.error("[Embedding] Failed to embed messages:", err);
         if (isQuotaExceededError(err)) {
@@ -158,7 +162,7 @@ export function useEmbeddings() {
         setIsIndexing(false);
       }
     },
-    [getEmbeddingEngine, errorToast],
+    [getEmbeddingEngine, errorToast, callWorker],
   );
 
   /**
