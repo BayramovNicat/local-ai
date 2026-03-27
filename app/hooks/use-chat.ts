@@ -243,9 +243,9 @@ export function useChat(
     const text = input.trim();
     if (!text && attachments.length === 0) return;
 
-    // Use current state via Ref to avoid stale closure issues
-    const currentMessages = messagesRef.current;
-    const isFirstMessage = currentMessages.length === 0;
+    // Use current state via Ref to avoid stale closure issues for the START of the function
+    const startMessages = messagesRef.current;
+    const isFirstMessage = startMessages.length === 0;
     forceScrollRef.current = true;
 
     let currentChatId = activeChatIdRef.current;
@@ -265,18 +265,22 @@ export function useChat(
       content: '',
     };
 
-    const initialMessages = [...currentMessages, userMsg, assistantMsg];
-    setMessages(initialMessages);
+    // Track messages locally in the function to avoid race conditions with state/refs
+    let activeMessages = [...startMessages, userMsg, assistantMsg];
+    
+    setMessages(activeMessages);
     setInput('');
     setAttachments([]);
     setIsStreaming(true);
 
     // Save user message immediately to prevent data loss
     if (currentChatId) {
-      const title = historyRef.current.find((s) => s.id === currentChatId)?.title || 'New Chat';
+      const session = historyRef.current.find((s) => s.id === currentChatId);
+      const title = session?.title || 'New Chat';
+      const prevMsgs = session?.messages || [];
       saveChatToDB(currentChatId, {
         title,
-        messages: [...currentMessages, userMsg],
+        messages: [...prevMsgs, userMsg],
       }).catch(console.error);
     }
 
@@ -310,8 +314,8 @@ export function useChat(
       totalChars += userMsg.content.length;
 
       // Iterate backwards through previous messages
-      for (let i = currentMessages.length - 1; i >= 0; i--) {
-        const msg = currentMessages[i];
+      for (let i = startMessages.length - 1; i >= 0; i--) {
+        const msg = startMessages[i];
         if (historyToKeep.length >= MAX_HISTORY_MSGS) break;
         if (totalChars + msg.content.length > MAX_HISTORY_CHARS) break;
 
@@ -347,21 +351,21 @@ export function useChat(
 
         // Periodically save assistant response to prevent data loss mid-stream
         if (now - lastSaveTime > SAVE_INTERVAL && currentChatId) {
-          const midMessages = messagesRef.current.map((m) =>
+          const midMessages = activeMessages.map((m) =>
             m.id === assistantId ? { ...m, content: currentText } : m,
           );
-          const title = historyRef.current.find((s) => s.id === currentChatId)?.title || 'New Chat';
+          const session = historyRef.current.find((s) => s.id === currentChatId);
+          const title = session?.title || 'New Chat';
           saveChatToDB(currentChatId, { title, messages: midMessages }).catch(console.error);
           lastSaveTime = now;
         }
       }
 
-      // Final update to ensure we have the complete message
-      // Re-calculate using latest state to be safe (messagesRef.current might have changed during generation)
-      const finalMessages = messagesRef.current.map((m) =>
+      // Update final local messages
+      activeMessages = activeMessages.map((m) =>
         m.id === assistantId ? { ...m, content: currentText } : m,
       );
-      setMessages(finalMessages);
+      setMessages(activeMessages);
 
       if (isFirstMessage) {
         try {
@@ -379,18 +383,18 @@ export function useChat(
           if (!title || generic.some((g) => title.toLowerCase().includes(g)) || title.length > 50) {
             title = text.length > 25 ? text.slice(0, 25) + '...' : text;
           }
-          updateHistory(currentChatId, finalMessages, title.replace(/^["']|["']$/g, ''));
+          updateHistory(currentChatId!, activeMessages, title.replace(/^["']|["']$/g, ''));
         } catch (e) {
           console.error(e);
-          updateHistory(currentChatId, finalMessages);
+          updateHistory(currentChatId!, activeMessages);
         }
       } else if (currentChatId) {
-        updateHistory(currentChatId, finalMessages);
+        updateHistory(currentChatId, activeMessages);
       }
     } catch (err) {
       console.error(err);
       errorToast('Failed to generate response. Please check WebGPU support.');
-      const errorMessages = messagesRef.current.map((m) =>
+      const errorMessages = activeMessages.map((m) =>
         m.id === assistantId ? { ...m, content: 'Error generating response.' } : m,
       );
       setMessages(errorMessages);
