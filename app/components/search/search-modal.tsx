@@ -31,6 +31,7 @@ export function SearchModal({
   const inputRef = useRef<HTMLInputElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const latestQueryIdRef = useRef<number>(0);
 
   // Focus input when modal opens
   useEffect(() => {
@@ -74,7 +75,8 @@ export function SearchModal({
       scrollContainerRef.current
     ) {
       const container = scrollContainerRef.current;
-      const selectedItem = container.children[selectedIndex] as HTMLElement;
+      const selectedItems = Array.from(container.children) as HTMLElement[];
+      const selectedItem = selectedItems[selectedIndex];
       if (selectedItem) {
         const itemTop = selectedItem.offsetTop;
         const itemBottom = itemTop + selectedItem.offsetHeight;
@@ -102,14 +104,24 @@ export function SearchModal({
       if (!value.trim()) {
         setResults([]);
         setHasSearched(false);
+        latestQueryIdRef.current++; // Invalidate any pending search
         return;
       }
 
+      const queryId = ++latestQueryIdRef.current;
+
       debounceRef.current = setTimeout(async () => {
-        const res = await onSearch(value);
-        setResults(res);
-        setSelectedIndex(0);
-        setHasSearched(true);
+        try {
+          const res = await onSearch(value);
+          // Only update if this is still the latest query
+          if (queryId === latestQueryIdRef.current) {
+            setResults(res);
+            setSelectedIndex(0);
+            setHasSearched(true);
+          }
+        } catch (err) {
+          console.error("Search error:", err);
+        }
       }, SEARCH_DEBOUNCE_MS);
     },
     [onSearch],
