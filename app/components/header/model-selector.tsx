@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Bot, ChevronDown, Search } from "lucide-react";
 import { Tooltip } from "../ui/tooltip";
 
@@ -20,9 +20,53 @@ export function ModelSelector({
   onSelect: (model: string) => void;
 }) {
   const [search, setSearch] = useState("");
+  const [activeIndex, setActiveIndex] = useState(0);
+  const listRef = useRef<HTMLDivElement>(null);
+
   const filtered = models.filter((m) =>
     m.toLowerCase().includes(search.toLowerCase()),
   );
+
+  // Reset active index when search or open state changes
+  useEffect(() => {
+    setActiveIndex(0);
+  }, [search, isOpen]);
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (!isOpen) return;
+
+    switch (e.key) {
+      case "ArrowDown":
+        e.preventDefault();
+        setActiveIndex((prev) => (prev + 1) % filtered.length);
+        break;
+      case "ArrowUp":
+        e.preventDefault();
+        setActiveIndex((prev) => (prev - 1 + filtered.length) % filtered.length);
+        break;
+      case "Enter":
+        e.preventDefault();
+        if (filtered[activeIndex]) {
+          onSelect(filtered[activeIndex]);
+          setSearch("");
+        }
+        break;
+      case "Escape":
+        e.preventDefault();
+        onToggle();
+        break;
+    }
+  };
+
+  // Ensure active item is visible in the scrollable list
+  useEffect(() => {
+    if (isOpen && listRef.current) {
+      const activeElement = listRef.current.children[activeIndex] as HTMLElement;
+      if (activeElement) {
+        activeElement.scrollIntoView({ block: "nearest" });
+      }
+    }
+  }, [activeIndex, isOpen]);
 
   return (
     <>
@@ -48,6 +92,7 @@ export function ModelSelector({
           className="absolute right-0 top-full mt-2 w-72 rounded-xl bg-[#0a0a0a] shadow-2xl shadow-black/50 z-40 border border-neutral-800/50 flex flex-col overflow-hidden backdrop-blur-xl"
           role="listbox"
           aria-label="AI Models"
+          onKeyDown={handleKeyDown}
         >
           <div className="flex items-center gap-2 px-3 border-b border-neutral-800/50">
             <Search size={14} className="text-neutral-500" aria-hidden="true" />
@@ -61,13 +106,21 @@ export function ModelSelector({
               onChange={(e) => setSearch(e.target.value)}
               value={search}
               aria-label="Search available AI models"
+              aria-autocomplete="list"
+              aria-controls="model-list"
+              aria-activedescendant={`model-option-${activeIndex}`}
             />
           </div>
-          <div className="p-1 max-h-100 overflow-y-auto">
+          <div 
+            id="model-list"
+            ref={listRef}
+            className="p-1 max-h-100 overflow-y-auto"
+          >
             {filtered.length > 0 ? (
-              filtered.map((model) => (
+              filtered.map((model, index) => (
                 <button
                   key={model}
+                  id={`model-option-${index}`}
                   role="option"
                   aria-selected={model === selected}
                   onClick={() => {
@@ -75,8 +128,10 @@ export function ModelSelector({
                     setSearch("");
                   }}
                   className={`w-full text-left px-3 py-2.5 text-sm transition-all cursor-pointer rounded-lg flex items-center justify-between group ${
-                    model === selected
-                      ? "bg-neutral-900/50"
+                    index === activeIndex
+                      ? "bg-neutral-800 text-white"
+                      : model === selected
+                      ? "bg-neutral-900/50 text-neutral-200"
                       : "hover:bg-neutral-900 text-neutral-400 hover:text-neutral-200"
                   }`}
                   style={
