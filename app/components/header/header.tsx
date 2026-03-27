@@ -64,6 +64,7 @@ export function Header({
           <button
             onClick={onToggleSidebar}
             className="p-2 rounded-lg text-neutral-400 hover:bg-neutral-800 hover:text-neutral-200 transition-colors cursor-pointer"
+            aria-label={isSidebarOpen ? "Collapse Sidebar" : "Expand Sidebar"}
           >
             {isSidebarOpen ? <X size={18} /> : <Menu size={18} />}
           </button>
@@ -78,6 +79,7 @@ export function Header({
           <button
             onClick={onOpenSearch}
             className="p-2 rounded-lg text-neutral-400 hover:bg-neutral-800 hover:text-neutral-200 transition-colors cursor-pointer"
+            aria-label="Search conversation history"
           >
             <Search size={18} />
           </button>
@@ -87,6 +89,7 @@ export function Header({
             <button
               onClick={onToggleColorPicker}
               className="p-2 rounded-lg text-neutral-400 hover:bg-neutral-800 hover:text-neutral-200 transition-colors cursor-pointer"
+              aria-label="Change accent color"
             >
               <Palette size={18} />
             </button>

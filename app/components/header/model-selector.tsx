@@ -30,6 +30,9 @@ export function ModelSelector({
         <button
           onClick={onToggle}
           className="flex items-center gap-2 px-3 py-2 rounded-lg border border-neutral-700 hover:border-neutral-500 transition-colors text-sm cursor-pointer max-w-45 sm:max-w-none"
+          aria-label={`Select AI model, current: ${selected}`}
+          aria-expanded={isOpen}
+          aria-haspopup="listbox"
         >
           <Bot size={14} style={{ color: accent }} />
           <span className="text-neutral-200 truncate">{selected}</span>
@@ -41,9 +44,13 @@ export function ModelSelector({
       </Tooltip>
 
       {isOpen && (
-        <div className="absolute right-0 top-full mt-2 w-72 rounded-xl bg-[#0a0a0a] shadow-2xl shadow-black/50 z-40 border border-neutral-800/50 flex flex-col overflow-hidden backdrop-blur-xl">
+        <div 
+          className="absolute right-0 top-full mt-2 w-72 rounded-xl bg-[#0a0a0a] shadow-2xl shadow-black/50 z-40 border border-neutral-800/50 flex flex-col overflow-hidden backdrop-blur-xl"
+          role="listbox"
+          aria-label="AI Models"
+        >
           <div className="flex items-center gap-2 px-3 border-b border-neutral-800/50">
-            <Search size={14} className="text-neutral-500" />
+            <Search size={14} className="text-neutral-500" aria-hidden="true" />
             <input
               id="model-search"
               name="model-search"
@@ -53,6 +60,7 @@ export function ModelSelector({
               className="w-full py-3 text-sm bg-transparent text-neutral-200 placeholder-neutral-500 focus:outline-none"
               onChange={(e) => setSearch(e.target.value)}
               value={search}
+              aria-label="Search available AI models"
             />
           </div>
           <div className="p-1 max-h-100 overflow-y-auto">
@@ -60,6 +68,8 @@ export function ModelSelector({
               filtered.map((model) => (
                 <button
                   key={model}
+                  role="option"
+                  aria-selected={model === selected}
                   onClick={() => {
                     onSelect(model);
                     setSearch("");
@@ -89,7 +99,7 @@ export function ModelSelector({
                 </button>
               ))
             ) : (
-              <div className="px-3 py-8 text-center text-neutral-500 text-sm">
+              <div className="px-3 py-8 text-center text-neutral-500 text-sm" role="status">
                 No models found
               </div>
             )}

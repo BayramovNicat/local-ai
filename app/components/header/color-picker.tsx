@@ -28,6 +28,7 @@ export function ColorPicker({
                   borderColor: accent === preset.hex ? "#ffffff" : "transparent",
                 }}
                 title={preset.name}
+                aria-label={`Select ${preset.name} color`}
               />
             ))}
           </div>
@@ -37,6 +38,7 @@ export function ColorPicker({
               value={accent}
               onChange={(e) => onSelect(e.target.value)}
               className="w-8 h-8 rounded cursor-pointer bg-transparent"
+              aria-label="Pick custom accent color"
             />
             <span className="text-xs text-neutral-400 font-mono">{accent}</span>
           </div>
