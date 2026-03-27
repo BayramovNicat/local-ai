@@ -8,6 +8,7 @@ export function useEngine(selectedModel: string) {
   const [isCached, setIsCached] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [downloadProgressText, setDownloadProgressText] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const engineRef = useRef<MLCEngineInterface | null>(null);
   const enginePromiseRef = useRef<Promise<MLCEngineInterface> | null>(null);
 
@@ -16,8 +17,20 @@ export function useEngine(selectedModel: string) {
 
     const promise = (async () => {
       setIsLoading(true);
+      setError(null);
       setDownloadProgress(0);
       setDownloadProgressText("Initializing...");
+
+      // Pre-flight check for WebGPU support
+      if (!("gpu" in navigator)) {
+        const errorMsg = "WebGPU is not supported in this browser. Please use a recent version of Chrome or Edge (113+).";
+        if (active) {
+          setError(errorMsg);
+          setDownloadProgressText(errorMsg);
+          setIsLoading(false);
+        }
+        throw new Error(errorMsg);
+      }
 
       const webllm = await import("@mlc-ai/web-llm");
 
@@ -76,5 +89,6 @@ export function useEngine(selectedModel: string) {
     isCached,
     downloadProgress,
     downloadProgressText,
+    error,
   };
 }

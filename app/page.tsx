@@ -34,6 +34,7 @@ export default function Home() {
     isCached,
     downloadProgress,
     downloadProgressText,
+    error: engineError,
   } = useEngine(selectedModel);
 
   const {
@@ -269,6 +270,7 @@ export default function Home() {
                 progressText={downloadProgressText}
                 isCached={isCached}
                 accent={accentColor}
+                error={engineError}
               />
             )}
             {messages.length === 0 && !isLoading ? (
