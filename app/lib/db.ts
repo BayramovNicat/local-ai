@@ -1,4 +1,5 @@
 import type { ChatSession, EmbeddingRecord, Document, Attachment } from "@/app/types";
+import { normalizeVector } from "./embeddings";
 
 const DB_NAME = "local-ai";
 const STORE_CHATS = "chats";
@@ -91,7 +92,7 @@ function prepareChatForSave(chat: Omit<ChatSession, "id">): Omit<ChatSession, "i
   };
 }
 
-function restoreChatFromSave(chat: ChatSession): ChatSession {
+export function restoreChatFromSave(chat: ChatSession): ChatSession {
   return {
     ...chat,
     messages: chat.messages.map(msg => ({
@@ -189,21 +190,28 @@ export async function saveEmbeddings(
 ): Promise<void> {
   if (records.length === 0) return;
   const db = await openDB();
+
+  // Normalize vectors for faster dot-product search
+  const normalizedRecords = records.map(r => ({
+    ...r,
+    vector: normalizeVector(r.vector)
+  }));
+
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_EMBEDDINGS, "readwrite");
     const store = tx.objectStore(STORE_EMBEDDINGS);
-    for (const rec of records) {
+    for (const rec of normalizedRecords) {
       store.put(rec);
     }
     tx.oncomplete = () => {
       // Update cache incrementally — O(n) for batch size, not full cache
       if (_embeddingsCache) {
-        for (const rec of records) {
+        for (const rec of normalizedRecords) {
           _embeddingsCache.set(rec.id, rec);
         }
       }
       if (_embeddedMsgIds) {
-        for (const rec of records) {
+        for (const rec of normalizedRecords) {
           if (rec.messageId) _embeddedMsgIds.add(rec.messageId);
         }
       }
@@ -315,29 +323,28 @@ export async function loadConvEmbeddingsExcludingChat(
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_EMBEDDINGS, "readonly");
     const index = tx.objectStore(STORE_EMBEDDINGS).index("chatId");
-    const results: EmbeddingRecord[] = [];
-
+    
     // Two ranges: everything before and after the excluded chatId
     const ranges = [
       IDBKeyRange.upperBound(excludeChatId, true),
       IDBKeyRange.lowerBound(excludeChatId, true),
     ];
 
+    const results: EmbeddingRecord[] = [];
+    let completed = 0;
+
     for (const range of ranges) {
-      const req = index.openCursor(range);
-      req.onsuccess = (e) => {
-        const cursor = (e.target as IDBRequest<IDBCursorWithValue | null>)
-          .result;
-        if (cursor) {
-          const rec = cursor.value as EmbeddingRecord;
-          if (!rec.documentId) results.push(rec);
-          cursor.continue();
+      const req = index.getAll(range);
+      req.onsuccess = () => {
+        const batch = (req.result ?? []).filter((r: EmbeddingRecord) => !r.documentId);
+        results.push(...batch);
+        completed++;
+        if (completed === ranges.length) {
+          resolve(results);
         }
       };
+      req.onerror = () => reject(req.error);
     }
-
-    tx.oncomplete = () => resolve(results);
-    tx.onerror = () => reject(tx.error);
   });
 }
 

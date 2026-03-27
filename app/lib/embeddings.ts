@@ -1,19 +1,26 @@
 import type { EmbeddingRecord, SearchResult, ChatSession } from "@/app/types";
 
 /**
+ * Normalize a vector to unit length (L2 norm).
+ */
+export function normalizeVector(v: number[]): number[] {
+  let mag = 0;
+  for (let i = 0; i < v.length; i++) mag += v[i] * v[i];
+  mag = Math.sqrt(mag);
+  if (mag === 0) return v;
+  return v.map((x) => x / mag);
+}
+
+/**
  * Cosine similarity between two vectors.
+ * Assuming vectors are already normalized, this is just a dot product.
  */
 export function cosineSimilarity(a: number[], b: number[]): number {
   let dot = 0;
-  let magA = 0;
-  let magB = 0;
   for (let i = 0; i < a.length; i++) {
     dot += a[i] * b[i];
-    magA += a[i] * a[i];
-    magB += b[i] * b[i];
   }
-  const denom = Math.sqrt(magA) * Math.sqrt(magB);
-  return denom === 0 ? 0 : dot / denom;
+  return dot;
 }
 
 /**

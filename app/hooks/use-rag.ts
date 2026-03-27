@@ -70,7 +70,6 @@ export function useRag(
           return;
         }
 
-        // Save document record
         const docId = `doc_${Date.now()}`;
         const doc: DocType = {
           id: docId,
@@ -80,7 +79,6 @@ export function useRag(
           chatId,
           createdAt: Date.now(),
         };
-        await saveDocument(doc);
 
         // Chunk text
         const chunks = chunkText(text, 512, 64);
@@ -112,6 +110,7 @@ export function useRag(
         }
 
         await saveEmbeddingsWithSync(records);
+        await saveDocument(doc);
 
         // Update local state
         setDocuments((prev) => [...prev, doc]);

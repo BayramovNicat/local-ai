@@ -6,6 +6,7 @@ import {
   saveChat as saveChatToDB,
   isQuotaExceededError,
   revokeChatUrls,
+  restoreChatFromSave,
 } from "@/app/lib/db";
 import type { Attachment, ChatSession, Message } from "@/app/types";
 import type { MLCEngineInterface } from "@mlc-ai/web-llm";
@@ -56,7 +57,11 @@ export function useChat(
       const { type, payload } = event.data;
       
       if (type === "chat-update") {
-        const { chatId, messages, title } = payload;
+        const { chatId, messages: rawMessages, title } = payload;
+        // Recreate ObjectURLs for attachments if they exist (they arrive as Blobs)
+        const restored = restoreChatFromSave({ id: chatId, title: title || "", messages: rawMessages });
+        const messages = restored.messages;
+
         setHistory((prev) => {
           const exists = prev.some(s => s.id === chatId);
           if (exists) {
@@ -172,13 +177,20 @@ export function useChat(
           saveChatToDB(chatId, {
             title: session.title,
             messages: session.messages,
-          }).catch(console.error);
+          }).catch((err) => {
+            console.error(err);
+            if (isQuotaExceededError(err)) {
+              errorToast("Storage quota exceeded. Please delete some chats.");
+            } else {
+              errorToast("Failed to save chat to database.");
+            }
+          });
           broadcastUpdate(chatId, session.messages, session.title);
         }
         return updated;
       });
     },
-    [broadcastUpdate],
+    [broadcastUpdate, errorToast],
   );
 
   useEffect(() => {
@@ -322,11 +334,11 @@ export function useChat(
       }
 
       // Final update to ensure we have the complete message
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.id === assistantId ? { ...m, content: currentText } : m,
-        ),
-      );
+      const finalMessages = messages.concat(userMsg, {
+        ...assistantMsg,
+        content: currentText,
+      });
+      setMessages(finalMessages);
 
       if (isFirstMessage) {
         try {
@@ -355,32 +367,29 @@ export function useChat(
           }
           updateHistory(
             currentChatId,
-            messagesRef.current,
+            finalMessages,
             title.replace(/^["']|["']$/g, ""),
           );
         } catch (e) {
           console.error(e);
+          updateHistory(currentChatId, finalMessages);
         }
+      } else if (currentChatId) {
+        updateHistory(currentChatId, finalMessages);
       }
     } catch (err) {
       console.error(err);
       errorToast("Failed to generate response. Please check WebGPU support.");
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.id === assistantId
-            ? { ...m, content: "Error generating response." }
-            : m,
-        ),
-      );
+      const errorMessages = messages.concat(userMsg, {
+        ...assistantMsg,
+        content: "Error generating response.",
+      });
+      setMessages(errorMessages);
+      if (currentChatId) {
+        updateHistory(currentChatId, errorMessages);
+      }
     } finally {
       setIsStreaming(false);
-      if (currentChatId) {
-        updateHistory(currentChatId, messagesRef.current);
-        // At this point, attachments are persisted in the messages list.
-        // We can't revoke them immediately if we want them to show in the UI,
-        // but we've already setAttachments([]) above which clears the input state.
-        // The main cleanup happens on unmount or chat switch via restoreChatFromSave recreating them.
-      }
     }
   }, [
     input,
@@ -427,14 +436,17 @@ export function useChat(
       if (chat) revokeChatUrls([chat]);
 
       setHistory((prev) => prev.filter((s) => s.id !== id));
-      deleteChatFromDB(id).catch(console.error);
+      deleteChatFromDB(id).catch((err) => {
+        console.error(err);
+        errorToast("Failed to delete chat from database.");
+      });
       broadcastDelete(id);
       if (activeChatId === id) {
         setMessages([]);
         setActiveChatId(null);
       }
     },
-    [activeChatId, broadcastDelete],
+    [activeChatId, broadcastDelete, errorToast],
   );
 
   const editMessage = useCallback((id: string) => {
