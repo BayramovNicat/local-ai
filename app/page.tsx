@@ -256,6 +256,10 @@ export default function Home() {
         >
           <div
             className={`max-w-4xl mx-auto px-4 sm:px-6 md:px-8 ${messages.length === 0 ? "" : "space-y-6"}`}
+            role="log"
+            aria-live="polite"
+            aria-relevant="additions text"
+            aria-atomic="false"
           >
             {isLoading && (
               <LoadingBanner
