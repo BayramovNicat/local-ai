@@ -38,6 +38,60 @@ export function useChat(
   const interactionTimerRef = useRef<NodeJS.Timeout | null>(null);
   const forceScrollRef = useRef(false);
 
+  // Tab Synchronization
+  useEffect(() => {
+    const channel = new BroadcastChannel("local-ai-sync");
+    
+    const handler = (event: MessageEvent) => {
+      const { type, payload } = event.data;
+      
+      if (type === "chat-update") {
+        const { chatId, messages, title } = payload;
+        setHistory((prev) => {
+          const exists = prev.some(s => s.id === chatId);
+          if (exists) {
+            return prev.map((s) =>
+              s.id === chatId
+                ? { ...s, messages, ...(title && { title }) }
+                : s
+            );
+          } else {
+            return [{ id: chatId, title: title || "New Chat", messages }, ...prev];
+          }
+        });
+        
+        if (activeChatIdRef.current === chatId) {
+          setMessages(messages);
+        }
+      } else if (type === "chat-delete") {
+        const { chatId } = payload;
+        setHistory((prev) => prev.filter((s) => s.id !== chatId));
+        if (activeChatIdRef.current === chatId) {
+          setMessages([]);
+          setActiveChatId(null);
+        }
+      }
+    };
+
+    channel.addEventListener("message", handler);
+    return () => {
+      channel.removeEventListener("message", handler);
+      channel.close();
+    };
+  }, []);
+
+  const broadcastUpdate = useCallback((chatId: string, messages: Message[], title?: string) => {
+    const channel = new BroadcastChannel("local-ai-sync");
+    channel.postMessage({ type: "chat-update", payload: { chatId, messages, title } });
+    channel.close();
+  }, []);
+
+  const broadcastDelete = useCallback((chatId: string) => {
+    const channel = new BroadcastChannel("local-ai-sync");
+    channel.postMessage({ type: "chat-delete", payload: { chatId } });
+    channel.close();
+  }, []);
+
   useEffect(() => {
     const container = scrollContainerRef.current;
     if (!container) return;
@@ -104,15 +158,17 @@ export function useChat(
             : s,
         );
         const session = updated.find((s) => s.id === chatId);
-        if (session)
+        if (session) {
           saveChatToDB(chatId, {
             title: session.title,
             messages: session.messages,
           }).catch(console.error);
+          broadcastUpdate(chatId, session.messages, session.title);
+        }
         return updated;
       });
     },
-    [],
+    [broadcastUpdate],
   );
 
   useEffect(() => {
@@ -153,8 +209,9 @@ export function useChat(
         }
       },
     );
+    broadcastUpdate(id, [], newSession.title);
     return id;
-  }, [errorToast]);
+  }, [errorToast, broadcastUpdate]);
 
   const handleSend = useCallback(async () => {
     const text = input.trim();
@@ -318,12 +375,13 @@ export function useChat(
     (id: string) => {
       setHistory((prev) => prev.filter((s) => s.id !== id));
       deleteChatFromDB(id).catch(console.error);
+      broadcastDelete(id);
       if (activeChatId === id) {
         setMessages([]);
         setActiveChatId(null);
       }
     },
-    [activeChatId],
+    [activeChatId, broadcastDelete],
   );
 
   const editMessage = useCallback((id: string) => {
