@@ -18,30 +18,10 @@ export function useEmbeddings() {
   const [isSearching, setIsSearching] = useState(false);
   const embeddingEngineRef = useRef<MLCEngineInterface | null>(null);
   const embeddingPromiseRef = useRef<Promise<MLCEngineInterface> | null>(null);
-  const isInitializingRef = useRef(false);
 
   const getEmbeddingEngine = useCallback(async (): Promise<MLCEngineInterface> => {
     if (embeddingEngineRef.current) return embeddingEngineRef.current;
     if (embeddingPromiseRef.current) return embeddingPromiseRef.current;
-
-    if (isInitializingRef.current) {
-      // Wait for existing initialization (bail after 60s to prevent leak)
-      return new Promise((resolve, reject) => {
-        let elapsed = 0;
-        const interval = setInterval(() => {
-          elapsed += 100;
-          if (embeddingEngineRef.current) {
-            clearInterval(interval);
-            resolve(embeddingEngineRef.current);
-          } else if (!isInitializingRef.current || elapsed >= 60_000) {
-            clearInterval(interval);
-            reject(new Error("Embedding engine initialization failed"));
-          }
-        }, 100);
-      });
-    }
-
-    isInitializingRef.current = true;
 
     const promise = (async () => {
       const webllm = await import("@mlc-ai/web-llm");
@@ -66,11 +46,11 @@ export function useEmbeddings() {
       return engine;
     })();
 
+    // Set promise ref immediately so concurrent callers share the same promise
     embeddingPromiseRef.current = promise;
 
     promise.catch((err) => {
       console.error("[Embedding] Failed to load embedding model:", err);
-      isInitializingRef.current = false;
       embeddingPromiseRef.current = null;
     });
 

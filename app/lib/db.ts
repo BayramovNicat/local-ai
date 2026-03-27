@@ -193,6 +193,65 @@ export async function deleteEmbeddingsByDocumentId(
   });
 }
 
+/**
+ * Load document embeddings for a specific chat (uses chatId index).
+ */
+export async function loadDocEmbeddingsByChatId(
+  chatId: string,
+): Promise<EmbeddingRecord[]> {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_EMBEDDINGS, "readonly");
+    const index = tx.objectStore(STORE_EMBEDDINGS).index("chatId");
+    const req = index.getAll(IDBKeyRange.only(chatId));
+    req.onsuccess = () => {
+      resolve((req.result ?? []).filter((r: EmbeddingRecord) => r.documentId));
+    };
+    req.onerror = () => reject(req.error);
+  });
+}
+
+/**
+ * Load message embeddings from all chats except the given one (for conversation memory).
+ * Uses two index range queries to skip the excluded chatId entirely.
+ */
+export async function loadConvEmbeddingsExcludingChat(
+  excludeChatId: string,
+): Promise<EmbeddingRecord[]> {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_EMBEDDINGS, "readonly");
+    const index = tx.objectStore(STORE_EMBEDDINGS).index("chatId");
+    const results: EmbeddingRecord[] = [];
+
+    // Two ranges: everything before and after the excluded chatId
+    const ranges = [
+      IDBKeyRange.upperBound(excludeChatId, true),
+      IDBKeyRange.lowerBound(excludeChatId, true),
+    ];
+
+    let completed = 0;
+    for (const range of ranges) {
+      const req = index.openCursor(range);
+      req.onsuccess = (e) => {
+        const cursor = (e.target as IDBRequest<IDBCursorWithValue | null>)
+          .result;
+        if (cursor) {
+          const rec = cursor.value as EmbeddingRecord;
+          if (!rec.documentId) results.push(rec);
+          cursor.continue();
+        }
+      };
+    }
+
+    tx.oncomplete = () => {
+      completed++;
+      if (completed >= 1) resolve(results);
+    };
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
 export async function getEmbeddedMessageIds(): Promise<Set<string>> {
   if (_embeddedMsgIds) return _embeddedMsgIds;
   const all = await loadAllEmbeddings();

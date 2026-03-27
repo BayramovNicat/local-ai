@@ -6,7 +6,8 @@ import {
   deleteDocumentsByChatId,
   deleteEmbeddingsByDocumentId,
   getDocumentsByChatId,
-  loadAllEmbeddings,
+  loadConvEmbeddingsExcludingChat,
+  loadDocEmbeddingsByChatId,
   saveDocument,
   saveEmbeddings,
 } from "@/app/lib/db";
@@ -139,13 +140,13 @@ export function useRag(
         });
         const queryVector = response.data[0].embedding;
 
-        // Load all embeddings
-        const allEmbeddings = await loadAllEmbeddings();
+        // Load only the embeddings we need via indexed queries
+        const [docPool, convPool] = await Promise.all([
+          loadDocEmbeddingsByChatId(chatId),
+          loadConvEmbeddingsExcludingChat(chatId),
+        ]);
 
         // 1. Document Context (current chat only)
-        const docPool = allEmbeddings.filter(
-          (e) => e.chatId === chatId && e.documentId,
-        );
         const scoredDocs = docPool
           .map((rec) => ({
             text: rec.text,
@@ -162,9 +163,6 @@ export function useRag(
 
         // 2. Conversation Context (other chats)
         const chatMap = new Map(history.map((s) => [s.id, s.title]));
-        const convPool = allEmbeddings.filter(
-          (e) => e.chatId !== chatId && !e.documentId,
-        );
         const scoredConvs = convPool
           .map((rec) => ({
             text: rec.text,

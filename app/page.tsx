@@ -108,9 +108,7 @@ export default function Home() {
       lastEmbedRef.current = { chatId: activeChatId, count: messages.length };
       embedMessages(messages, activeChatId);
     }
-    // Only run when streaming stops
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isStreaming]);
+  }, [isStreaming, messages, activeChatId, embedMessages]);
 
   // Global Shortcuts
   useEffect(() => {
