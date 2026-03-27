@@ -186,25 +186,25 @@ export function useChat(
 
   const updateHistory = useCallback(
     (chatId: string, msgs: Message[], title?: string) => {
+      let finalTitleToSave = title || 'New Chat';
+
       setHistory((prev) => {
         const session = prev.find((s) => s.id === chatId);
         if (!session) return prev;
+        
+        // If no title provided, use the existing one from state
+        if (!title) finalTitleToSave = session.title;
+
         return prev.map((s) => (s.id === chatId ? { ...s, messages: msgs, ...(title && { title }) } : s));
       });
 
-      // Side effect with the correct title
-      // If title is provided, use it. If not, try to find it in historyRef, but fallback to 'New Chat'
-      // To be safer, we can try to find the session in historyRef which is updated every render.
-      const currentSession = historyRef.current.find((s) => s.id === chatId);
-      const finalTitle = title || currentSession?.title || 'New Chat';
-
       saveChatToDB(chatId, {
-        title: finalTitle,
+        title: finalTitleToSave,
         messages: msgs,
       }).catch((err) => {
         console.error(err);
       });
-      broadcastUpdate(chatId, msgs, finalTitle);
+      broadcastUpdate(chatId, msgs, finalTitleToSave);
     },
     [broadcastUpdate],
   );
@@ -227,7 +227,7 @@ export function useChat(
   const createChat = useCallback(
     async (title?: string) => {
       const id = crypto.randomUUID();
-      const initialTitle = title ? (title.length > 20 ? title.slice(0, 20) + '...' : title) : 'New Chat';
+      const initialTitle = title ? (title.length > 25 ? title.slice(0, 25) + '...' : title) : 'New Chat';
       const newSession: ChatSession = {
         id,
         title: initialTitle,
@@ -376,17 +376,18 @@ export function useChat(
             messages: [
               {
                 role: 'user',
-                content: `User: ${text}\nAssistant: ${currentText}\n\nGenerate a 2-5 word concise title for this chat. Output ONLY the title text. No quotes.`,
+                content: `User: ${text}\nAssistant: ${currentText}\n\nGenerate a 2-5 word concise title for this chat based on the exchange. Output ONLY the title text. No quotes.`,
               },
             ],
             stream: false,
           });
           let aiTitle = res.choices[0]?.message.content?.trim() || '';
           aiTitle = aiTitle.replace(/^["']|["']$/g, '');
-          const generic = ['ai assistant', 'helpful assistant', 'untitled', 'chat with ai'];
-          if (!aiTitle || generic.some((g) => aiTitle.toLowerCase().includes(g)) || aiTitle.length > 50) {
+          const generic = ['ai assistant', 'helpful assistant', 'untitled'];
+          if (!aiTitle || generic.some((g) => aiTitle.toLowerCase() === g) || aiTitle.length > 60) {
             aiTitle = currentTitle;
           }
+          console.log(`[Title Gen] Original: "${currentTitle}" -> AI: "${aiTitle}"`);
           updateHistory(currentChatId!, activeMessages, aiTitle);
         } catch (e) {
           console.error('[Title Generation Failed]', e);
@@ -426,6 +427,7 @@ export function useChat(
       return [];
     });
     setActiveChatId(null);
+    activeChatIdRef.current = null;
   }, []);
 
   const selectChat = useCallback((id: string) => {
@@ -434,6 +436,7 @@ export function useChat(
       const restored = restoreChatFromSave(session);
       setMessages(restored.messages);
       setActiveChatId(id);
+      activeChatIdRef.current = id;
       setHistory((prev) => prev.map((s) => (s.id === id ? restored : s)));
     }
   }, []);
@@ -452,6 +455,7 @@ export function useChat(
       if (activeChatIdRef.current === id) {
         setMessages([]);
         setActiveChatId(null);
+        activeChatIdRef.current = null;
       }
     },
     [broadcastDelete, errorToast],
