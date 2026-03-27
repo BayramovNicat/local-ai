@@ -104,7 +104,7 @@ export function useEmbeddings() {
         const batchSize = EMBEDDING_BATCH_SIZE;
         const records: EmbeddingRecord[] = [];
 
-        for (let i = 0; i < chunks.length; i += batchSize) {
+        for (let i = 0; i < toEmbed.length; i += batchSize) {
           const batch = toEmbed.slice(i, i + batchSize);
           const texts = batch.map((b) => b.chunk);
 
