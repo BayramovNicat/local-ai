@@ -5,6 +5,7 @@ import {
   loadAllChats,
   saveChat as saveChatToDB,
   isQuotaExceededError,
+  revokeChatUrls,
 } from "@/app/lib/db";
 import type { Attachment, ChatSession, Message } from "@/app/types";
 import type { MLCEngineInterface } from "@mlc-ai/web-llm";
@@ -32,11 +33,20 @@ export function useChat(
   messagesRef.current = messages;
   const activeChatIdRef = useRef(activeChatId);
   activeChatIdRef.current = activeChatId;
+  const historyRef = useRef(history);
+  historyRef.current = history;
   const prevChatIdRef = useRef<string | null>(null);
   const isAtBottomRef = useRef(true);
   const isInteractingRef = useRef(false);
   const interactionTimerRef = useRef<NodeJS.Timeout | null>(null);
   const forceScrollRef = useRef(false);
+
+  // Cleanup URLs on final unmount
+  useEffect(() => {
+    return () => {
+      revokeChatUrls(historyRef.current);
+    };
+  }, []);
 
   // Tab Synchronization
   useEffect(() => {
@@ -413,6 +423,9 @@ export function useChat(
 
   const deleteChat = useCallback(
     (id: string) => {
+      const chat = historyRef.current.find((s) => s.id === id);
+      if (chat) revokeChatUrls([chat]);
+
       setHistory((prev) => prev.filter((s) => s.id !== id));
       deleteChatFromDB(id).catch(console.error);
       broadcastDelete(id);

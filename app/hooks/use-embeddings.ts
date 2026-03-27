@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useToast } from "@/app/components/ui/toast";
 import type { MLCEngineInterface } from "@mlc-ai/web-llm";
 import type { ChatSession, Message, EmbeddingRecord, SearchResult } from "@/app/types";
@@ -65,9 +65,16 @@ export function useEmbeddings() {
   const callWorker = useCallback(async (type: string, payload: unknown): Promise<unknown> => {
     if (!workerRef.current) throw new Error("Worker not initialized");
     const id = Math.random().toString(36).substring(7);
+    
     return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        workerRef.current?.removeEventListener("message", handler);
+        reject(new Error(`Worker call timeout: ${type}`));
+      }, 30000); // 30s timeout
+
       const handler = (e: MessageEvent) => {
         if (e.data.id === id) {
+          clearTimeout(timeout);
           workerRef.current?.removeEventListener("message", handler);
           if (e.data.type.endsWith("-error")) {
             reject(new Error(e.data.payload));
@@ -79,6 +86,20 @@ export function useEmbeddings() {
       workerRef.current?.addEventListener("message", handler);
       workerRef.current?.postMessage({ type, payload, id });
     });
+  }, []);
+
+  // Cleanup worker on unmount
+  useEffect(() => {
+    return () => {
+      if (workerRef.current) {
+        workerRef.current.terminate();
+        workerRef.current = null;
+      }
+      if (embeddingEngineRef.current) {
+        embeddingEngineRef.current.unload();
+        embeddingEngineRef.current = null;
+      }
+    };
   }, []);
 
   /**
@@ -94,6 +115,18 @@ export function useEmbeddings() {
   const initEmbeddingEngine = useCallback(() => {
     getEmbeddingEngine();
   }, [getEmbeddingEngine]);
+
+  const saveEmbeddingsWithSync = useCallback(async (records: EmbeddingRecord[]) => {
+    if (records.length === 0) return;
+    await saveEmbeddings(records);
+    if (workerRef.current) {
+      try {
+        await callWorker("invalidate-cache", {});
+      } catch (e) {
+        console.warn("[Embedding] Failed to invalidate cache in worker:", e);
+      }
+    }
+  }, [callWorker]);
 
   /**
    * Embed un-indexed messages from a chat and save vectors to IndexedDB.
@@ -146,11 +179,7 @@ export function useEmbeddings() {
           }
         }
 
-        await saveEmbeddings(records);
-        // Sync cache to worker
-        if (workerRef.current) {
-          await callWorker("invalidate-cache", {});
-        }
+        await saveEmbeddingsWithSync(records);
       } catch (err) {
         console.error("[Embedding] Failed to embed messages:", err);
         if (isQuotaExceededError(err)) {
@@ -162,7 +191,7 @@ export function useEmbeddings() {
         setIsIndexing(false);
       }
     },
-    [getEmbeddingEngine, errorToast, callWorker],
+    [getEmbeddingEngine, errorToast, saveEmbeddingsWithSync],
   );
 
   /**
@@ -223,5 +252,6 @@ export function useEmbeddings() {
     search,
     cleanupEmbeddings,
     callWorker,
+    saveEmbeddingsWithSync,
   };
 }

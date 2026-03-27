@@ -11,7 +11,6 @@ import {
   deleteEmbeddingsByDocumentId,
   getDocumentsByChatId,
   saveDocument,
-  saveEmbeddings,
   isQuotaExceededError,
 } from "@/app/lib/db";
 import { extractText } from "@/app/lib/documents";
@@ -31,6 +30,7 @@ export function useRag(
   initEmbeddingEngine: () => void,
   callWorker: (type: string, payload: unknown) => Promise<unknown>,
   selectedModel: string,
+  saveEmbeddingsWithSync: (records: EmbeddingRecord[]) => Promise<void>,
 ) {
   const { error: errorToast } = useToast();
   const [documents, setDocuments] = useState<DocType[]>([]);
@@ -111,14 +111,7 @@ export function useRag(
           }
         }
 
-        await saveEmbeddings(records);
-
-        // Sync cache to worker
-        try {
-          await callWorker("invalidate-cache", {});
-        } catch (e) {
-          console.warn("[RAG] Failed to invalidate cache in worker:", e);
-        }
+        await saveEmbeddingsWithSync(records);
 
         // Update local state
         setDocuments((prev) => [...prev, doc]);
@@ -136,7 +129,7 @@ export function useRag(
         setIsUploading(false);
       }
     },
-    [getEmbeddingEngine, initEmbeddingEngine, errorToast, callWorker],
+    [getEmbeddingEngine, initEmbeddingEngine, errorToast, saveEmbeddingsWithSync],
   );
 
   /**

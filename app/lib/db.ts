@@ -282,6 +282,11 @@ export async function deleteEmbeddingsByDocumentId(
 export async function loadDocEmbeddingsByChatId(
   chatId: string,
 ): Promise<EmbeddingRecord[]> {
+  if (_embeddingsCache) {
+    return Array.from(_embeddingsCache.values()).filter(
+      (r) => r.chatId === chatId && !!r.documentId,
+    );
+  }
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_EMBEDDINGS, "readonly");
@@ -301,6 +306,11 @@ export async function loadDocEmbeddingsByChatId(
 export async function loadConvEmbeddingsExcludingChat(
   excludeChatId: string,
 ): Promise<EmbeddingRecord[]> {
+  if (_embeddingsCache) {
+    return Array.from(_embeddingsCache.values()).filter(
+      (r) => r.chatId !== excludeChatId && !r.documentId,
+    );
+  }
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_EMBEDDINGS, "readonly");

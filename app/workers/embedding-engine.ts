@@ -39,6 +39,9 @@ self.onmessage = async (e: MessageEvent) => {
       .filter((t: string) => t.length > 1);
 
     try {
+      // Ensure cache is populated
+      await loadAllEmbeddings();
+      
       const [docPool, convPool] = await Promise.all([
         loadDocEmbeddingsByChatId(chatId),
         loadConvEmbeddingsExcludingChat(chatId),
