@@ -1,12 +1,11 @@
 import { useRef } from "react";
-import { MessageSquare, Plus, Trash2 } from "lucide-react";
+import { Plus } from "lucide-react";
 import { Tooltip } from "@/app/components/ui/tooltip";
 import { SidebarList } from "./sidebar-list";
 import type { ChatSession } from "@/app/types";
 
 export function Sidebar({
   isOpen,
-  accent,
   history,
   activeChatId,
   onNewChat,
@@ -15,7 +14,6 @@ export function Sidebar({
   onClose,
 }: {
   isOpen: boolean;
-  accent: string;
   history: ChatSession[];
   activeChatId: string | null;
   onNewChat: () => void;

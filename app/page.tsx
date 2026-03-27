@@ -84,18 +84,16 @@ export default function Home() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   // Advanced Animation Logic
-  const prevChatId = useRef(activeChatId);
-  const prevMsgCount = useRef(messages.length);
+  const [[prevChatId, prevMsgCount], setPrev] = useState([activeChatId, messages.length]);
 
   const isFirstMsg =
-    prevChatId.current === activeChatId &&
-    prevMsgCount.current === 0 &&
+    prevChatId === activeChatId &&
+    prevMsgCount === 0 &&
     messages.length > 0;
 
-  useEffect(() => {
-    prevChatId.current = activeChatId;
-    prevMsgCount.current = messages.length;
-  }, [activeChatId, messages.length]);
+  if (prevChatId !== activeChatId || prevMsgCount !== messages.length) {
+    setPrev([activeChatId, messages.length]);
+  }
 
   // Load documents when active chat changes
   useEffect(() => {
@@ -226,7 +224,6 @@ export default function Home() {
         onDeleteChat={handleDeleteChat}
         onClose={() => setIsSidebarOpen(false)}
       />
-
       <div className="flex-1 relative min-w-0">
         <Header
           accent={accentColor}

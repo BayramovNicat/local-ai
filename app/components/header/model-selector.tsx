@@ -19,55 +19,6 @@ export function ModelSelector({
   onToggle: () => void;
   onSelect: (model: string) => void;
 }) {
-  const [search, setSearch] = useState("");
-  const [activeIndex, setActiveIndex] = useState(0);
-  const listRef = useRef<HTMLDivElement>(null);
-
-  const filtered = models.filter((m) =>
-    m.toLowerCase().includes(search.toLowerCase()),
-  );
-
-  // Reset active index when search or open state changes
-  useEffect(() => {
-    setActiveIndex(0);
-  }, [search, isOpen]);
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (!isOpen) return;
-
-    switch (e.key) {
-      case "ArrowDown":
-        e.preventDefault();
-        setActiveIndex((prev) => (prev + 1) % filtered.length);
-        break;
-      case "ArrowUp":
-        e.preventDefault();
-        setActiveIndex((prev) => (prev - 1 + filtered.length) % filtered.length);
-        break;
-      case "Enter":
-        e.preventDefault();
-        if (filtered[activeIndex]) {
-          onSelect(filtered[activeIndex]);
-          setSearch("");
-        }
-        break;
-      case "Escape":
-        e.preventDefault();
-        onToggle();
-        break;
-    }
-  };
-
-  // Ensure active item is visible in the scrollable list
-  useEffect(() => {
-    if (isOpen && listRef.current) {
-      const activeElement = listRef.current.children[activeIndex] as HTMLElement;
-      if (activeElement) {
-        activeElement.scrollIntoView({ block: "nearest" });
-      }
-    }
-  }, [activeIndex, isOpen]);
-
   return (
     <>
       <Tooltip content="Select Model" position="bottom" className="inline-block">
@@ -88,79 +39,140 @@ export function ModelSelector({
       </Tooltip>
 
       {isOpen && (
-        <div 
-          className="absolute right-0 top-full mt-2 w-72 rounded-xl bg-[#0a0a0a] shadow-2xl shadow-black/50 z-40 border border-neutral-800/50 flex flex-col overflow-hidden backdrop-blur-xl"
-          role="listbox"
-          aria-label="AI Models"
-          onKeyDown={handleKeyDown}
-        >
-          <div className="flex items-center gap-2 px-3 border-b border-neutral-800/50">
-            <Search size={14} className="text-neutral-500" aria-hidden="true" />
-            <input
-              id="model-search"
-              name="model-search"
-              type="text"
-              placeholder="Search models..."
-              autoFocus
-              className="w-full py-3 text-sm bg-transparent text-neutral-200 placeholder-neutral-500 focus:outline-none"
-              onChange={(e) => setSearch(e.target.value)}
-              value={search}
-              aria-label="Search available AI models"
-              aria-autocomplete="list"
-              aria-controls="model-list"
-              aria-activedescendant={`model-option-${activeIndex}`}
-            />
-          </div>
-          <div 
-            id="model-list"
-            ref={listRef}
-            className="p-1 max-h-100 overflow-y-auto"
-          >
-            {filtered.length > 0 ? (
-              filtered.map((model, index) => (
-                <button
-                  key={model}
-                  id={`model-option-${index}`}
-                  role="option"
-                  aria-selected={model === selected}
-                  onClick={() => {
-                    onSelect(model);
-                    setSearch("");
-                  }}
-                  className={`w-full text-left px-3 py-2.5 text-sm transition-all cursor-pointer rounded-lg flex items-center justify-between group ${
-                    index === activeIndex
-                      ? "bg-neutral-800 text-white"
-                      : model === selected
-                      ? "bg-neutral-900/50 text-neutral-200"
-                      : "hover:bg-neutral-900 text-neutral-400 hover:text-neutral-200"
-                  }`}
-                  style={
-                    model === selected
-                      ? { borderLeft: `2px solid ${accent}` }
-                      : undefined
-                  }
-                >
-                  <span className={`truncate ${model === selected ? "text-white font-medium" : ""}`}>
-                    {model}
-                  </span>
-                  {model === selected && (
-                    <span 
-                      className="text-[10px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-400 group-hover:text-white transition-colors"
-                      style={{ color: accent }}
-                    >
-                      active
-                    </span>
-                  )}
-                </button>
-              ))
-            ) : (
-              <div className="px-3 py-8 text-center text-neutral-500 text-sm" role="status">
-                No models found
-              </div>
-            )}
-          </div>
-        </div>
+        <ModelDropdownContent
+          models={models}
+          selected={selected}
+          accent={accent}
+          onSelect={onSelect}
+          onToggle={onToggle}
+        />
       )}
     </>
+  );
+}
+
+function ModelDropdownContent({
+  models,
+  selected,
+  accent,
+  onSelect,
+  onToggle,
+}: {
+  models: string[];
+  selected: string;
+  accent: string;
+  onSelect: (model: string) => void;
+  onToggle: () => void;
+}) {
+  const [search, setSearch] = useState("");
+  const [activeIndex, setActiveIndex] = useState(0);
+  const listRef = useRef<HTMLDivElement>(null);
+
+  const filtered = models.filter((m) =>
+    m.toLowerCase().includes(search.toLowerCase()),
+  );
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    switch (e.key) {
+      case "ArrowDown":
+        e.preventDefault();
+        setActiveIndex((prev) => (prev + 1) % (filtered.length || 1));
+        break;
+      case "ArrowUp":
+        e.preventDefault();
+        setActiveIndex((prev) => (prev - 1 + filtered.length) % (filtered.length || 1));
+        break;
+      case "Enter":
+        e.preventDefault();
+        if (filtered[activeIndex]) {
+          onSelect(filtered[activeIndex]);
+        }
+        break;
+      case "Escape":
+        e.preventDefault();
+        onToggle();
+        break;
+    }
+  };
+
+  // Ensure active item is visible in the scrollable list
+  useEffect(() => {
+    if (listRef.current) {
+      const activeElement = listRef.current.children[activeIndex] as HTMLElement;
+      if (activeElement) {
+        activeElement.scrollIntoView({ block: "nearest" });
+      }
+    }
+  }, [activeIndex]);
+
+  return (
+    <div
+      className="absolute right-0 top-full mt-2 w-72 rounded-xl bg-[#0a0a0a] shadow-2xl shadow-black/50 z-40 border border-neutral-800/50 flex flex-col overflow-hidden backdrop-blur-xl"
+      role="listbox"
+      aria-label="AI Models"
+      onKeyDown={handleKeyDown}
+    >
+      <div className="flex items-center gap-2 px-3 border-b border-neutral-800/50">
+        <Search size={14} className="text-neutral-500" aria-hidden="true" />
+        <input
+          id="model-search"
+          name="model-search"
+          type="text"
+          placeholder="Search models..."
+          autoFocus
+          className="w-full py-3 text-sm bg-transparent text-neutral-200 placeholder-neutral-500 focus:outline-none"
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setActiveIndex(0);
+          }}
+          value={search}
+          aria-label="Search available AI models"
+          aria-autocomplete="list"
+          aria-controls="model-list"
+          aria-activedescendant={`model-option-${activeIndex}`}
+        />
+      </div>
+      <div id="model-list" ref={listRef} className="p-1 max-h-100 overflow-y-auto">
+        {filtered.length > 0 ? (
+          filtered.map((model, index) => (
+            <button
+              key={model}
+              id={`model-option-${index}`}
+              role="option"
+              aria-selected={model === selected}
+              onClick={() => onSelect(model)}
+              className={`w-full text-left px-3 py-2.5 text-sm transition-all cursor-pointer rounded-lg flex items-center justify-between group ${
+                index === activeIndex
+                  ? "bg-neutral-800 text-white"
+                  : model === selected
+                  ? "bg-neutral-900/50 text-neutral-200"
+                  : "hover:bg-neutral-900 text-neutral-400 hover:text-neutral-200"
+              }`}
+              style={
+                model === selected ? { borderLeft: `2px solid ${accent}` } : undefined
+              }
+            >
+              <span
+                className={`truncate ${model === selected ? "text-white font-medium" : ""}`}
+              >
+                {model}
+              </span>
+              {model === selected && (
+                <span
+                  className="text-[10px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-400 group-hover:text-white transition-colors"
+                  style={{ color: accent }}
+                >
+                  active
+                </span>
+              )}
+            </button>
+          ))
+        ) : (
+          <div className="px-3 py-8 text-center text-neutral-500 text-sm" role="status">
+            No models found
+          </div>
+        )}
+      </div>
+    </div>
   );
 }

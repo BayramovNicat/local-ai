@@ -5,7 +5,6 @@ import {
   loadAllChats,
   saveChat as saveChatToDB,
   isQuotaExceededError,
-  revokeAttachmentUrls,
 } from "@/app/lib/db";
 import type { Attachment, ChatSession, Message } from "@/app/types";
 import type { MLCEngineInterface } from "@mlc-ai/web-llm";

@@ -2,6 +2,7 @@ import { WebWorkerMLCEngineHandler } from "@mlc-ai/web-llm";
 import { loadAllEmbeddings, loadDocEmbeddingsByChatId, loadConvEmbeddingsExcludingChat } from "../lib/db";
 import { searchEmbeddings, hybridScore } from "../lib/embeddings";
 import { RAG_SCORE_THRESHOLD_DOCS, MAX_CONTEXT_CHARS, RAG_SCORE_THRESHOLD_CONV } from "../data/constants";
+import type { ChatSession } from "../types";
 
 const handler = new WebWorkerMLCEngineHandler();
 
@@ -46,7 +47,7 @@ self.onmessage = async (e: MessageEvent) => {
       }
 
       // Conversation Context
-      const chatMap = new Map(history.map((s: any) => [s.id, s.title]));
+      const chatMap = new Map(history.map((s: ChatSession) => [s.id, s.title]));
       const scoredConvs = convPool
         .map((rec) => ({
           text: rec.text,

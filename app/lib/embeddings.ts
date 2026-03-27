@@ -121,7 +121,6 @@ export function chunkText(
   overlap = 64,
 ): string[] {
   const separators = ["\n\n", "\n", ". ", "? ", "! ", " ", ""];
-  const chunks: string[] = [];
 
   function splitRecursive(input: string): string[] {
     const trimmed = input.trim();

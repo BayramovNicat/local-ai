@@ -1,4 +1,4 @@
-import type { ChatSession, EmbeddingRecord, Document, Message } from "@/app/types";
+import type { ChatSession, EmbeddingRecord, Document, Attachment } from "@/app/types";
 
 const DB_NAME = "local-ai";
 const STORE_CHATS = "chats";

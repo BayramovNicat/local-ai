@@ -2,10 +2,7 @@
 
 import {
   EMBEDDING_MODEL,
-  MAX_CONTEXT_CHARS,
   EMBEDDING_BATCH_SIZE,
-  RAG_SCORE_THRESHOLD_DOCS,
-  RAG_SCORE_THRESHOLD_CONV,
   MODEL_CONFIGS,
 } from "@/app/data/constants";
 import {
@@ -13,14 +10,12 @@ import {
   deleteDocumentsByChatId,
   deleteEmbeddingsByDocumentId,
   getDocumentsByChatId,
-  loadConvEmbeddingsExcludingChat,
-  loadDocEmbeddingsByChatId,
   saveDocument,
   saveEmbeddings,
   isQuotaExceededError,
 } from "@/app/lib/db";
 import { extractText } from "@/app/lib/documents";
-import { chunkText, hybridScore } from "@/app/lib/embeddings";
+import { chunkText } from "@/app/lib/embeddings";
 import type {
   ChatSession,
   Document as DocType,
@@ -34,7 +29,7 @@ export function useRag(
   getEmbeddingEngine: () => Promise<MLCEngineInterface>,
   getEmbeddingEngineIfReady: () => MLCEngineInterface | null,
   initEmbeddingEngine: () => void,
-  callWorker: (type: string, payload: any) => Promise<any>,
+  callWorker: (type: string, payload: unknown) => Promise<unknown>,
   selectedModel: string,
 ) {
   const { error: errorToast } = useToast();
@@ -161,13 +156,13 @@ export function useRag(
         const config = MODEL_CONFIGS[selectedModel] || MODEL_CONFIGS.default;
 
         // Delegate context retrieval and scoring to worker
-        return await callWorker("custom-rag-context", {
+        return (await callWorker("custom-rag-context", {
           query,
           queryVector,
           chatId,
           history,
           maxContextChars: config.maxContextChars,
-        });
+        })) as { docContext: string; convContext: string };
       } catch (err) {
         console.error("[RAG] Failed to get context:", err);
         errorToast("Failed to retrieve context from documents.");

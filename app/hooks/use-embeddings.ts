@@ -7,12 +7,11 @@ import type { ChatSession, Message, EmbeddingRecord, SearchResult } from "@/app/
 import { EMBEDDING_MODEL, EMBEDDING_BATCH_SIZE } from "@/app/data/constants";
 import {
   saveEmbeddings,
-  loadAllEmbeddings,
   deleteEmbeddingsByChatId,
   getEmbeddedMessageIds,
   isQuotaExceededError,
 } from "@/app/lib/db";
-import { chunkText, searchEmbeddings } from "@/app/lib/embeddings";
+import { chunkText } from "@/app/lib/embeddings";
 
 export function useEmbeddings() {
   const { error: errorToast } = useToast();
@@ -61,9 +60,9 @@ export function useEmbeddings() {
     });
 
     return promise;
-  }, []);
+  }, [errorToast]);
 
-  const callWorker = useCallback(async (type: string, payload: any): Promise<any> => {
+  const callWorker = useCallback(async (type: string, payload: unknown): Promise<unknown> => {
     if (!workerRef.current) throw new Error("Worker not initialized");
     const id = Math.random().toString(36).substring(7);
     return new Promise((resolve, reject) => {
@@ -181,12 +180,12 @@ export function useEmbeddings() {
         const queryVector = response.data[0].embedding;
 
         // Perform search in worker
-        return await callWorker("custom-search", {
+        return (await callWorker("custom-search", {
           queryVector,
           history,
           query,
           topK: 10
-        });
+        })) as SearchResult[];
       } catch (err) {
         console.error("[Embedding] Search failed:", err);
         errorToast("Search failed. Please try again.");
