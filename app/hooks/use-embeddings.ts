@@ -10,6 +10,7 @@ import {
   loadAllEmbeddings,
   deleteEmbeddingsByChatId,
   getEmbeddedMessageIds,
+  isQuotaExceededError,
 } from "@/app/lib/db";
 import { chunkText, searchEmbeddings } from "@/app/lib/embeddings";
 
@@ -128,7 +129,11 @@ export function useEmbeddings() {
         await saveEmbeddings(records);
       } catch (err) {
         console.error("[Embedding] Failed to embed messages:", err);
-        errorToast("Failed to index messages for search.");
+        if (isQuotaExceededError(err)) {
+          errorToast("Storage quota exceeded. Please delete some chats.");
+        } else {
+          errorToast("Failed to index messages for search.");
+        }
       } finally {
         setIsIndexing(false);
       }

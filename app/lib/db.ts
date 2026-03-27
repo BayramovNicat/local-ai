@@ -48,6 +48,30 @@ function openDB(): Promise<IDBDatabase> {
   });
 }
 
+/**
+ * Check if an error is a QuotaExceededError.
+ */
+export function isQuotaExceededError(err: unknown): boolean {
+  return (
+    err instanceof DOMException &&
+    (err.name === "QuotaExceededError" || err.name === "NS_ERROR_DOM_QUOTA_REACHED")
+  );
+}
+
+/**
+ * Get estimated storage usage and quota.
+ */
+export async function getStorageUsage(): Promise<{ usage: number; quota: number } | null> {
+  if (navigator.storage && navigator.storage.estimate) {
+    const estimate = await navigator.storage.estimate();
+    return {
+      usage: estimate.usage ?? 0,
+      quota: estimate.quota ?? 0,
+    };
+  }
+  return null;
+}
+
 // ── Chat CRUD ──────────────────────────────────────────────
 
 /**

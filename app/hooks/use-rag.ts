@@ -10,6 +10,7 @@ import {
   loadDocEmbeddingsByChatId,
   saveDocument,
   saveEmbeddings,
+  isQuotaExceededError,
 } from "@/app/lib/db";
 import { extractText } from "@/app/lib/documents";
 import { chunkText, hybridScore } from "@/app/lib/embeddings";
@@ -115,7 +116,11 @@ export function useRag(
         );
       } catch (err) {
         console.error("[RAG] Failed to upload document:", err);
-        errorToast(`Failed to process document: ${file.name}`);
+        if (isQuotaExceededError(err)) {
+          errorToast("Storage quota exceeded. Please delete some chats.");
+        } else {
+          errorToast(`Failed to process document: ${file.name}`);
+        }
       } finally {
         setIsUploading(false);
       }

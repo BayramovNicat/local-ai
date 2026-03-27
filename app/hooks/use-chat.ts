@@ -4,6 +4,7 @@ import {
   deleteChat as deleteChatFromDB,
   loadAllChats,
   saveChat as saveChatToDB,
+  isQuotaExceededError,
 } from "@/app/lib/db";
 import type { Attachment, ChatSession, Message } from "@/app/types";
 import type { MLCEngineInterface } from "@mlc-ai/web-llm";
@@ -145,7 +146,11 @@ export function useChat(
     await saveChatToDB(id, { title: newSession.title, messages: [] }).catch(
       (err) => {
         console.error(err);
-        errorToast("Failed to save new chat to database.");
+        if (isQuotaExceededError(err)) {
+          errorToast("Storage quota exceeded. Please delete some chats.");
+        } else {
+          errorToast("Failed to save new chat to database.");
+        }
       },
     );
     return id;
