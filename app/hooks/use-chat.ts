@@ -5,6 +5,7 @@ import {
   loadAllChats,
   saveChat as saveChatToDB,
   isQuotaExceededError,
+  revokeAttachmentUrls,
 } from "@/app/lib/db";
 import type { Attachment, ChatSession, Message } from "@/app/types";
 import type { MLCEngineInterface } from "@mlc-ai/web-llm";
@@ -330,7 +331,13 @@ export function useChat(
       );
     } finally {
       setIsStreaming(false);
-      if (currentChatId) updateHistory(currentChatId, messagesRef.current);
+      if (currentChatId) {
+        updateHistory(currentChatId, messagesRef.current);
+        // At this point, attachments are persisted in the messages list.
+        // We can't revoke them immediately if we want them to show in the UI,
+        // but we've already setAttachments([]) above which clears the input state.
+        // The main cleanup happens on unmount or chat switch via restoreChatFromSave recreating them.
+      }
     }
   }, [
     input,

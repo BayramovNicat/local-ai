@@ -136,6 +136,17 @@ export async function loadAllChats(): Promise<ChatSession[]> {
 }
 
 /**
+ * Revoke ObjectURLs for a single list of attachments.
+ */
+export function revokeAttachmentUrls(attachments: Attachment[]) {
+  for (const att of attachments) {
+    if (att.url.startsWith("blob:")) {
+      URL.revokeObjectURL(att.url);
+    }
+  }
+}
+
+/**
  * Revoke ObjectURLs to prevent memory leaks.
  */
 export function revokeChatUrls(chats: ChatSession[]) {
