@@ -14,6 +14,8 @@ export function useEngine(selectedModel: string) {
 
   useEffect(() => {
     let active = true;
+    let currentWorker: Worker | null = null;
+    let currentEngine: MLCEngineInterface | null = null;
 
     const promise = (async () => {
       setIsLoading(true);
@@ -37,13 +39,13 @@ export function useEngine(selectedModel: string) {
       const cached = await webllm.hasModelInCache(selectedModel);
       if (active) setIsCached(cached);
 
-      const worker = new Worker(
+      currentWorker = new Worker(
         new URL("../workers/engine.ts", import.meta.url),
         { type: "module" },
       );
 
       const engine = await webllm.CreateWebWorkerMLCEngine(
-        worker,
+        currentWorker,
         selectedModel,
         {
           initProgressCallback: (report) => {
@@ -56,8 +58,13 @@ export function useEngine(selectedModel: string) {
       );
 
       if (active) {
+        currentEngine = engine;
         engineRef.current = engine;
         setIsLoading(false);
+      } else {
+        // If we became inactive while engine was loading, clean it up immediately
+        engine.unload();
+        currentWorker.terminate();
       }
 
       return engine;
@@ -74,6 +81,13 @@ export function useEngine(selectedModel: string) {
 
     return () => {
       active = false;
+      if (currentEngine) {
+        currentEngine.unload();
+      }
+      if (currentWorker) {
+        currentWorker.terminate();
+      }
+      engineRef.current = null;
     };
   }, [selectedModel]);
 
