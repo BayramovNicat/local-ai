@@ -25,5 +25,18 @@ export const AVAILABLE_MODELS = [
 
 export const EMBEDDING_MODEL = "snowflake-arctic-embed-m-q0f32-MLC-b4";
 
+// RAG & Search
 export const MAX_CONTEXT_CHARS = 1500;
 export const SUPPORTED_DOC_TYPES = ".txt,.md,.pdf";
+export const RAG_SCORE_THRESHOLD_DOCS = 0.2;
+export const RAG_SCORE_THRESHOLD_CONV = 0.3;
+export const SEARCH_DEBOUNCE_MS = 300;
+export const EMBEDDING_BATCH_SIZE = 4;
+
+// UI & Performance
+export const SCROLL_THRESHOLD_TOP = 200;
+export const SCROLL_THRESHOLD_BOTTOM = 200;
+export const INITIAL_VISIBLE_MESSAGES = 30;
+export const LOAD_MORE_MESSAGES_INCREMENT = 30;
+export const INITIAL_VISIBLE_CHATS = 40;
+export const LOAD_MORE_CHATS_INCREMENT = 40;

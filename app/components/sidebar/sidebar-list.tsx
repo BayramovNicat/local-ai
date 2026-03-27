@@ -4,6 +4,11 @@ import { useState, useEffect, useRef } from "react";
 import { MessageSquare, Trash2 } from "lucide-react";
 import { Tooltip } from "@/app/components/ui/tooltip";
 import type { ChatSession } from "@/app/types";
+import {
+  INITIAL_VISIBLE_CHATS,
+  LOAD_MORE_CHATS_INCREMENT,
+  SCROLL_THRESHOLD_BOTTOM,
+} from "@/app/data/constants";
 
 interface SidebarListProps {
   history: ChatSession[];
@@ -13,9 +18,6 @@ interface SidebarListProps {
   scrollContainerRef: React.RefObject<HTMLDivElement | null>;
 }
 
-const INITIAL_VISIBLE = 40;
-const LOAD_MORE_INCREMENT = 40;
-
 export function SidebarList({
   history,
   activeChatId,
@@ -23,7 +25,7 @@ export function SidebarList({
   onDeleteChat,
   scrollContainerRef,
 }: SidebarListProps) {
-  const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE);
+  const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE_CHATS);
   const isLoadingMoreRef = useRef(false);
 
   useEffect(() => {
@@ -33,12 +35,12 @@ export function SidebarList({
     const handleScroll = () => {
       const { scrollTop, scrollHeight, clientHeight } = container;
       if (
-        scrollHeight - scrollTop - clientHeight < 200 &&
+        scrollHeight - scrollTop - clientHeight < SCROLL_THRESHOLD_BOTTOM &&
         visibleCount < history.length &&
         !isLoadingMoreRef.current
       ) {
         isLoadingMoreRef.current = true;
-        setVisibleCount((prev) => Math.min(prev + LOAD_MORE_INCREMENT, history.length));
+        setVisibleCount((prev) => Math.min(prev + LOAD_MORE_CHATS_INCREMENT, history.length));
         // Small delay to prevent double-triggering
         setTimeout(() => {
           isLoadingMoreRef.current = false;

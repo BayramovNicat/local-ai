@@ -4,7 +4,7 @@ import { useState, useRef, useCallback } from "react";
 import { useToast } from "@/app/components/ui/toast";
 import type { MLCEngineInterface } from "@mlc-ai/web-llm";
 import type { ChatSession, Message, EmbeddingRecord, SearchResult } from "@/app/types";
-import { EMBEDDING_MODEL } from "@/app/data/constants";
+import { EMBEDDING_MODEL, EMBEDDING_BATCH_SIZE } from "@/app/data/constants";
 import {
   saveEmbeddings,
   loadAllEmbeddings,
@@ -100,11 +100,11 @@ export function useEmbeddings() {
 
         if (toEmbed.length === 0) return;
 
-        // Batch embed — process in groups of 4 (model's max batch size)
-        const batchSize = 4;
+        // Batch embed — process in groups of EMBEDDING_BATCH_SIZE (model's max batch size)
+        const batchSize = EMBEDDING_BATCH_SIZE;
         const records: EmbeddingRecord[] = [];
 
-        for (let i = 0; i < toEmbed.length; i += batchSize) {
+        for (let i = 0; i < chunks.length; i += batchSize) {
           const batch = toEmbed.slice(i, i + batchSize);
           const texts = batch.map((b) => b.chunk);
 

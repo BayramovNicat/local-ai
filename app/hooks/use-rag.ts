@@ -1,6 +1,12 @@
 "use client";
 
-import { EMBEDDING_MODEL, MAX_CONTEXT_CHARS } from "@/app/data/constants";
+import {
+  EMBEDDING_MODEL,
+  MAX_CONTEXT_CHARS,
+  EMBEDDING_BATCH_SIZE,
+  RAG_SCORE_THRESHOLD_DOCS,
+  RAG_SCORE_THRESHOLD_CONV,
+} from "@/app/data/constants";
 import {
   deleteDocument as deleteDocFromDB,
   deleteDocumentsByChatId,
@@ -83,7 +89,7 @@ export function useRag(
 
         // Embed chunks
         const engine = await getEmbeddingEngine();
-        const batchSize = 4;
+        const batchSize = EMBEDDING_BATCH_SIZE;
         const records: EmbeddingRecord[] = [];
 
         for (let i = 0; i < chunks.length; i += batchSize) {
@@ -164,7 +170,7 @@ export function useRag(
 
         let docContext = "";
         for (const chunk of scoredDocs) {
-          if (chunk.score < 0.2) break;
+          if (chunk.score < RAG_SCORE_THRESHOLD_DOCS) break;
           if (docContext.length + chunk.text.length + 2 > MAX_CONTEXT_CHARS) break;
           docContext += chunk.text + "\n\n";
         }
@@ -182,7 +188,7 @@ export function useRag(
         let convContext = "";
         const MAX_CONV_CHARS = 1000;
         for (const chunk of scoredConvs) {
-          if (chunk.score < 0.3) break;
+          if (chunk.score < RAG_SCORE_THRESHOLD_CONV) break;
           const entry = `[From: ${chunk.chatTitle}] ${chunk.text}\n\n`;
           if (convContext.length + entry.length > MAX_CONV_CHARS) break;
           convContext += entry;

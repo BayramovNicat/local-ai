@@ -3,6 +3,11 @@
 import { useState, useEffect, useRef } from "react";
 import { ChatMessage } from "./chat-message";
 import type { Message } from "@/app/types";
+import {
+  INITIAL_VISIBLE_MESSAGES,
+  LOAD_MORE_MESSAGES_INCREMENT,
+  SCROLL_THRESHOLD_TOP,
+} from "@/app/data/constants";
 
 interface MessageListProps {
   messages: Message[];
@@ -10,15 +15,12 @@ interface MessageListProps {
   scrollContainerRef: React.RefObject<HTMLElement | null>;
 }
 
-const INITIAL_VISIBLE = 30;
-const LOAD_MORE_INCREMENT = 30;
-
 export function MessageList({
   messages,
   onEdit,
   scrollContainerRef,
 }: MessageListProps) {
-  const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE);
+  const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE_MESSAGES);
   const isLoadingMoreRef = useRef(false);
 
   // Handle loading more when scrolling to top
@@ -29,7 +31,7 @@ export function MessageList({
     const handleScroll = () => {
       // If user is near top and there are more messages to show
       if (
-        container.scrollTop < 200 &&
+        container.scrollTop < SCROLL_THRESHOLD_TOP &&
         visibleCount < messages.length &&
         !isLoadingMoreRef.current
       ) {
@@ -39,7 +41,7 @@ export function MessageList({
         const prevScrollTop = container.scrollTop;
 
         setVisibleCount((prev) => {
-          const nextCount = Math.min(prev + LOAD_MORE_INCREMENT, messages.length);
+          const nextCount = Math.min(prev + LOAD_MORE_MESSAGES_INCREMENT, messages.length);
           
           // Use requestAnimationFrame to adjust scroll after the new messages are rendered
           requestAnimationFrame(() => {

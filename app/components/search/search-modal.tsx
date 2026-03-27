@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Search, X, MessageSquare, User, Bot, FileText, Loader2 } from "lucide-react";
 import type { SearchResult } from "@/app/types";
+import { SEARCH_DEBOUNCE_MS } from "@/app/data/constants";
 
 export function SearchModal({
   isOpen,
@@ -109,7 +110,7 @@ export function SearchModal({
         setResults(res);
         setSelectedIndex(0);
         setHasSearched(true);
-      }, 300);
+      }, SEARCH_DEBOUNCE_MS);
     },
     [onSearch],
   );
