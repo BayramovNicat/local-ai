@@ -46,7 +46,10 @@ export function hybridScore(
   queryVector: number[],
   docVector: number[],
 ): number {
-  return cosineSimilarity(queryVector, docVector) * 0.5 + keywordScore(queryTerms, lowerText) * 0.5;
+  return (
+    cosineSimilarity(normalizeVector(queryVector), docVector) * 0.5 +
+    keywordScore(queryTerms, lowerText) * 0.5
+  );
 }
 
 /**
@@ -61,6 +64,9 @@ export function searchEmbeddings(
   query: string,
   topK = 10,
 ): SearchResult[] {
+  // Ensure query vector is normalized
+  const normalizedQuery = normalizeVector(queryVector);
+
   const queryTerms = query
     .toLowerCase()
     .split(/\s+/)
@@ -75,7 +81,7 @@ export function searchEmbeddings(
       if (!chatTitle) return null;
 
       const lowerText = rec.text.toLowerCase();
-      const semantic = cosineSimilarity(queryVector, rec.vector);
+      const semantic = cosineSimilarity(normalizedQuery, rec.vector);
       const keyword = keywordScore(queryTerms, lowerText);
 
       // Hybrid: semantic provides base relevance, keyword boosts exact matches
