@@ -81,7 +81,6 @@ export default function Home() {
     selectChat,
     deleteChat: deleteChatOriginal,
     createChat,
-    editMessage,
     removeAttachment,
     isStreaming,
     stopGenerating,
@@ -268,11 +267,7 @@ export default function Home() {
               </div>
             ) : (
               <>
-                <MessageList
-                  messages={messages}
-                  onEdit={editMessage}
-                  scrollContainerRef={scrollContainerRef}
-                />
+                <MessageList messages={messages} scrollContainerRef={scrollContainerRef} />
                 {isStreaming &&
                   messages.length > 0 &&
                   messages[messages.length - 1].role === 'assistant' &&

@@ -42,7 +42,7 @@ export function MessageInput({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const hasContent = input.trim() || attachments.length > 0;
 
-  // Sync state to editor (for editing messages)
+  // Sync state to editor
   useEffect(() => {
     if (editorRef.current && editorRef.current.innerText !== input) {
       editorRef.current.innerText = input;

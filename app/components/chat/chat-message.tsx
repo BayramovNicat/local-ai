@@ -3,19 +3,12 @@
 import { memo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Pencil } from 'lucide-react';
 import type { Message } from '@/app/types';
 import { CopyButton } from '@/app/components/ui/copy-button';
 import { CodeBlock } from './code-block';
 import { LoadingDots } from './loading-dots';
 
-export const ChatMessage = memo(function ChatMessage({
-  message,
-  onEdit,
-}: {
-  message: Message;
-  onEdit?: (id: string) => void;
-}) {
+export const ChatMessage = memo(function ChatMessage({ message }: { message: Message }) {
   const isUser = message.role === 'user';
 
   return (
@@ -62,14 +55,6 @@ export const ChatMessage = memo(function ChatMessage({
         </div>
         <div className="mt-1 flex gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
           <CopyButton text={message.content} />
-          {isUser && onEdit && (
-            <button
-              onClick={() => onEdit(message.id)}
-              className="cursor-pointer rounded-md p-1.5 text-neutral-500 transition-colors hover:bg-neutral-800 hover:text-neutral-300"
-            >
-              <Pencil size={13} />
-            </button>
-          )}
         </div>
       </div>
     </div>

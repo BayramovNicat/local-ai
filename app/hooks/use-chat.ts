@@ -1,17 +1,16 @@
 'use client';
 
+import { useToast } from '@/app/components/ui/toast';
 import {
   deleteChat as deleteChatFromDB,
   loadAllChats,
-  saveChat as saveChatToDB,
-  isQuotaExceededError,
-  revokeChatUrls,
   restoreChatFromSave,
+  revokeChatUrls,
+  saveChat as saveChatToDB,
 } from '@/app/lib/db';
 import type { Attachment, ChatSession, Message } from '@/app/types';
 import type { MLCEngineInterface } from '@mlc-ai/web-llm';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useToast } from '@/app/components/ui/toast';
 
 export function useChat(
   waitForEngine: () => Promise<MLCEngineInterface>,
@@ -191,11 +190,13 @@ export function useChat(
       setHistory((prev) => {
         const session = prev.find((s) => s.id === chatId);
         if (!session) return prev;
-        
+
         // If no title provided, use the existing one from state
         if (!title) finalTitleToSave = session.title;
 
-        return prev.map((s) => (s.id === chatId ? { ...s, messages: msgs, ...(title && { title }) } : s));
+        return prev.map((s) =>
+          s.id === chatId ? { ...s, messages: msgs, ...(title && { title }) } : s,
+        );
       });
 
       saveChatToDB(chatId, {
@@ -227,17 +228,21 @@ export function useChat(
   const createChat = useCallback(
     async (title?: string) => {
       const id = crypto.randomUUID();
-      const initialTitle = title ? (title.length > 25 ? title.slice(0, 25) + '...' : title) : 'New Chat';
+      const initialTitle = title
+        ? title.length > 25
+          ? title.slice(0, 25) + '...'
+          : title
+        : 'New Chat';
       const newSession: ChatSession = {
         id,
         title: initialTitle,
         messages: [],
       };
-      
+
       setHistory((prev) => [newSession, ...prev]);
       setActiveChatId(id);
       activeChatIdRef.current = id;
-      
+
       saveChatToDB(id, { title: initialTitle, messages: [] }).catch(console.error);
       broadcastUpdate(id, [], initialTitle);
       return { id, title: initialTitle };
@@ -268,7 +273,7 @@ export function useChat(
     };
 
     let activeMessages = [...startMessages, userMsg, assistantMsg];
-    
+
     setMessages(activeMessages);
     setInput('');
     setAttachments([]);
@@ -282,7 +287,7 @@ export function useChat(
       currentChatId = result.id;
       currentTitle = result.title;
     } else {
-      const session = historyRef.current.find(s => s.id === currentChatId);
+      const session = historyRef.current.find((s) => s.id === currentChatId);
       currentTitle = session?.title || 'New Chat';
     }
 
@@ -342,8 +347,8 @@ export function useChat(
       let currentText = '';
       let lastUpdateTime = Date.now();
       let lastSaveTime = Date.now();
-      const UPDATE_INTERVAL = 50; 
-      const SAVE_INTERVAL = 2000; 
+      const UPDATE_INTERVAL = 50;
+      const SAVE_INTERVAL = 2000;
 
       for await (const chunk of chunks) {
         currentText += chunk.choices[0]?.delta.content || '';
@@ -360,7 +365,9 @@ export function useChat(
           activeMessages = activeMessages.map((m) =>
             m.id === assistantId ? { ...m, content: currentText } : m,
           );
-          saveChatToDB(currentChatId, { title: currentTitle, messages: activeMessages }).catch(console.error);
+          saveChatToDB(currentChatId, { title: currentTitle, messages: activeMessages }).catch(
+            console.error,
+          );
           lastSaveTime = now;
         }
       }
@@ -469,11 +476,6 @@ export function useChat(
     });
   }, []);
 
-  const editMessage = useCallback((id: string) => {
-    const found = messagesRef.current.find((m) => m.id === id);
-    if (found) setInput(found.content);
-  }, []);
-
   return {
     messages,
     input,
@@ -489,7 +491,6 @@ export function useChat(
     createChat,
     selectChat,
     deleteChat,
-    editMessage,
     isStreaming,
     isHistoryLoaded,
     stopGenerating,

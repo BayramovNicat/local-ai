@@ -11,11 +11,10 @@ import {
 
 interface MessageListProps {
   messages: Message[];
-  onEdit: (id: string) => void;
   scrollContainerRef: React.RefObject<HTMLElement | null>;
 }
 
-export function MessageList({ messages, onEdit, scrollContainerRef }: MessageListProps) {
+export function MessageList({ messages, scrollContainerRef }: MessageListProps) {
   const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE_MESSAGES);
   const isLoadingMoreRef = useRef(false);
 
@@ -66,7 +65,7 @@ export function MessageList({ messages, onEdit, scrollContainerRef }: MessageLis
   return (
     <>
       {visibleMessages.map((msg) => (
-        <ChatMessage key={msg.id} message={msg} onEdit={onEdit} />
+        <ChatMessage key={msg.id} message={msg} />
       ))}
     </>
   );
