@@ -6,7 +6,6 @@ import remarkGfm from 'remark-gfm';
 import type { Message } from '@/app/types';
 import { CopyButton } from '@/app/components/ui/copy-button';
 import { CodeBlock } from './code-block';
-import { LoadingDots } from './loading-dots';
 
 export const ChatMessage = memo(function ChatMessage({ message }: { message: Message }) {
   const isUser = message.role === 'user';
@@ -44,7 +43,14 @@ export const ChatMessage = memo(function ChatMessage({ message }: { message: Mes
           {isUser ? (
             <p className="text-sm leading-relaxed">{message.content}</p>
           ) : message.content === '' ? (
-            <LoadingDots />
+            <div className="flex items-center gap-2 text-xs text-neutral-400 italic">
+              <span>AI is thinking</span>
+              <div className="flex gap-1">
+                <span className="h-1 w-1 animate-bounce rounded-full bg-neutral-500 [animation-delay:-0.3s]"></span>
+                <span className="h-1 w-1 animate-bounce rounded-full bg-neutral-500 [animation-delay:-0.15s]"></span>
+                <span className="h-1 w-1 animate-bounce rounded-full bg-neutral-500"></span>
+              </div>
+            </div>
           ) : (
             <div className="prose-chat text-sm">
               <ReactMarkdown remarkPlugins={[remarkGfm]} components={{ pre: CodeBlock }}>

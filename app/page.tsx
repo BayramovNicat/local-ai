@@ -268,21 +268,6 @@ export default function Home() {
             ) : (
               <>
                 <MessageList messages={messages} scrollContainerRef={scrollContainerRef} />
-                {isStreaming &&
-                  messages.length > 0 &&
-                  messages[messages.length - 1].role === 'assistant' &&
-                  !messages[messages.length - 1].content && (
-                    <div className="animate-in fade-in flex justify-start duration-300">
-                      <div className="flex items-center gap-2 rounded-2xl bg-neutral-900/50 px-4 py-3 text-xs text-neutral-400 italic">
-                        <span>AI is thinking</span>
-                        <div className="flex gap-1">
-                          <span className="h-1 w-1 animate-bounce rounded-full bg-neutral-500 [animation-delay:-0.3s]"></span>
-                          <span className="h-1 w-1 animate-bounce rounded-full bg-neutral-500 [animation-delay:-0.15s]"></span>
-                          <span className="h-1 w-1 animate-bounce rounded-full bg-neutral-500"></span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
               </>
             )}
           </div>
