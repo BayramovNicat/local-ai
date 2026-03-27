@@ -14,9 +14,6 @@ function openDB(): Promise<IDBDatabase> {
       const db = (e.target as IDBOpenDBRequest).result;
       const oldVersion = e.oldVersion;
 
-      if (oldVersion < 4 && db.objectStoreNames.contains(STORE_CHATS)) {
-        db.deleteObjectStore(STORE_CHATS);
-      }
       if (!db.objectStoreNames.contains(STORE_CHATS)) {
         db.createObjectStore(STORE_CHATS);
       }

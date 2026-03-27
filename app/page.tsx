@@ -190,7 +190,7 @@ export default function Home() {
 
       // Handle documents (sequential upload for safety)
       for (const doc of docFiles) {
-        uploadDocument(doc, chatId);
+        await uploadDocument(doc, chatId);
       }
     },
     [activeChatId, createChat, uploadDocument, setAttachments],

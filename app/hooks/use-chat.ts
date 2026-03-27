@@ -265,10 +265,20 @@ export function useChat(
       content: '',
     };
 
-    setMessages((prev) => [...prev, userMsg, assistantMsg]);
+    const initialMessages = [...currentMessages, userMsg, assistantMsg];
+    setMessages(initialMessages);
     setInput('');
     setAttachments([]);
     setIsStreaming(true);
+
+    // Save user message immediately to prevent data loss
+    if (currentChatId) {
+      const title = historyRef.current.find((s) => s.id === currentChatId)?.title || 'New Chat';
+      saveChatToDB(currentChatId, {
+        title,
+        messages: [...currentMessages, userMsg],
+      }).catch(console.error);
+    }
 
     try {
       const engine = await waitForEngine();
@@ -320,7 +330,9 @@ export function useChat(
 
       let currentText = '';
       let lastUpdateTime = Date.now();
+      let lastSaveTime = Date.now();
       const UPDATE_INTERVAL = 50; // ms
+      const SAVE_INTERVAL = 2000; // ms
 
       for await (const chunk of chunks) {
         currentText += chunk.choices[0]?.delta.content || '';
@@ -331,6 +343,16 @@ export function useChat(
             prev.map((m) => (m.id === assistantId ? { ...m, content: currentText } : m)),
           );
           lastUpdateTime = now;
+        }
+
+        // Periodically save assistant response to prevent data loss mid-stream
+        if (now - lastSaveTime > SAVE_INTERVAL && currentChatId) {
+          const midMessages = messagesRef.current.map((m) =>
+            m.id === assistantId ? { ...m, content: currentText } : m,
+          );
+          const title = historyRef.current.find((s) => s.id === currentChatId)?.title || 'New Chat';
+          saveChatToDB(currentChatId, { title, messages: midMessages }).catch(console.error);
+          lastSaveTime = now;
         }
       }
 
