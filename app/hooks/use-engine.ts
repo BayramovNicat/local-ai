@@ -25,7 +25,8 @@ export function useEngine(selectedModel: string) {
 
       // Pre-flight check for WebGPU support
       if (!("gpu" in navigator)) {
-        const errorMsg = "WebGPU is not supported in this browser. Please use a recent version of Chrome or Edge (113+).";
+        const errorMsg =
+          "WebGPU is not supported in this browser. Please use a recent version of Chrome or Edge (113+).";
         if (active) {
           setError(errorMsg);
           setDownloadProgressText(errorMsg);
@@ -39,23 +40,18 @@ export function useEngine(selectedModel: string) {
       const cached = await webllm.hasModelInCache(selectedModel);
       if (active) setIsCached(cached);
 
-      currentWorker = new Worker(
-        new URL("../workers/engine.ts", import.meta.url),
-        { type: "module" },
-      );
+      currentWorker = new Worker(new URL("../workers/engine.ts", import.meta.url), {
+        type: "module",
+      });
 
-      const engine = await webllm.CreateWebWorkerMLCEngine(
-        currentWorker,
-        selectedModel,
-        {
-          initProgressCallback: (report) => {
-            if (active) {
-              setDownloadProgress(Math.round(report.progress * 100));
-              setDownloadProgressText(report.text);
-            }
-          },
+      const engine = await webllm.CreateWebWorkerMLCEngine(currentWorker, selectedModel, {
+        initProgressCallback: (report) => {
+          if (active) {
+            setDownloadProgress(Math.round(report.progress * 100));
+            setDownloadProgressText(report.text);
+          }
         },
-      );
+      });
 
       if (active) {
         currentEngine = engine;
@@ -94,7 +90,7 @@ export function useEngine(selectedModel: string) {
   const waitForEngine = useCallback(async (): Promise<MLCEngineInterface> => {
     if (engineRef.current) return engineRef.current;
     if (!enginePromiseRef.current) throw new Error("Engine not initializing");
-    
+
     const engine = await enginePromiseRef.current;
     if (engineRef.current !== engine) {
       throw new Error("Engine was unloaded or replaced during initialization.");

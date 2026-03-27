@@ -1,0 +1,8 @@
+.next/
+node_modules/
+public/
+bun.lock
+.claude/
+.git/
+dist/
+build/

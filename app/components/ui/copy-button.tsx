@@ -21,7 +21,7 @@ export function CopyButton({ text, size = 13 }: { text: string; size?: number })
   return (
     <button
       onClick={handleCopy}
-      className="p-1.5 rounded-md text-neutral-500 hover:text-neutral-300 hover:bg-neutral-800 transition-colors cursor-pointer"
+      className="cursor-pointer rounded-md p-1.5 text-neutral-500 transition-colors hover:bg-neutral-800 hover:text-neutral-300"
     >
       {copied ? <Check size={size} /> : <Copy size={size} />}
     </button>

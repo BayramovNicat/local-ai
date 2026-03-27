@@ -1,10 +1,6 @@
 "use client";
 
-import {
-  EMBEDDING_MODEL,
-  EMBEDDING_BATCH_SIZE,
-  MODEL_CONFIGS,
-} from "@/app/data/constants";
+import { EMBEDDING_MODEL, EMBEDDING_BATCH_SIZE, MODEL_CONFIGS } from "@/app/data/constants";
 import {
   deleteDocument as deleteDocFromDB,
   deleteDocumentsByChatId,
@@ -15,11 +11,7 @@ import {
 } from "@/app/lib/db";
 import { extractText } from "@/app/lib/documents";
 import { chunkText } from "@/app/lib/embeddings";
-import type {
-  ChatSession,
-  Document as DocType,
-  EmbeddingRecord,
-} from "@/app/types";
+import type { ChatSession, Document as DocType, EmbeddingRecord } from "@/app/types";
 import type { MLCEngineInterface } from "@mlc-ai/web-llm";
 import { useCallback, useState } from "react";
 import { useToast } from "@/app/components/ui/toast";
@@ -156,7 +148,7 @@ export function useRag(
         const config = MODEL_CONFIGS[selectedModel] || MODEL_CONFIGS.default;
 
         // Delegate context retrieval and scoring to worker with lightweight metadata
-        const historyMetadata = Object.fromEntries(history.map(s => [s.id, s.title]));
+        const historyMetadata = Object.fromEntries(history.map((s) => [s.id, s.title]));
         return (await callWorker("custom-rag-context", {
           query,
           queryVector,
@@ -176,29 +168,35 @@ export function useRag(
   /**
    * Delete a document and its embeddings.
    */
-  const removeDocument = useCallback(async (docId: string) => {
-    try {
-      await deleteEmbeddingsByDocumentId(docId);
-      await deleteDocFromDB(docId);
-      setDocuments((prev) => prev.filter((d) => d.id !== docId));
-    } catch (err) {
-      console.error("[RAG] Failed to remove document:", err);
-      errorToast("Failed to remove document.");
-    }
-  }, [errorToast]);
+  const removeDocument = useCallback(
+    async (docId: string) => {
+      try {
+        await deleteEmbeddingsByDocumentId(docId);
+        await deleteDocFromDB(docId);
+        setDocuments((prev) => prev.filter((d) => d.id !== docId));
+      } catch (err) {
+        console.error("[RAG] Failed to remove document:", err);
+        errorToast("Failed to remove document.");
+      }
+    },
+    [errorToast],
+  );
 
   /**
    * Cleanup all documents for a chat.
    */
-  const cleanupDocuments = useCallback(async (chatId: string) => {
-    try {
-      await deleteDocumentsByChatId(chatId);
-      setDocuments([]);
-    } catch (err) {
-      console.error("[RAG] Failed to cleanup documents:", err);
-      errorToast("Failed to cleanup documents.");
-    }
-  }, [errorToast]);
+  const cleanupDocuments = useCallback(
+    async (chatId: string) => {
+      try {
+        await deleteDocumentsByChatId(chatId);
+        setDocuments([]);
+      } catch (err) {
+        console.error("[RAG] Failed to cleanup documents:", err);
+        errorToast("Failed to cleanup documents.");
+      }
+    },
+    [errorToast],
+  );
 
   return {
     documents,

@@ -27,21 +27,21 @@ export function DocumentPanel({
       {documents.map((doc) => (
         <div
           key={doc.id}
-          className="group flex items-center gap-2 pl-2.5 pr-1.5 py-1.5 rounded-lg border border-neutral-700 bg-neutral-900 text-xs text-neutral-300 transition-colors hover:border-neutral-600 shadow-sm"
+          className="group flex items-center gap-2 rounded-lg border border-neutral-700 bg-neutral-900 py-1.5 pr-1.5 pl-2.5 text-xs text-neutral-300 shadow-sm transition-colors hover:border-neutral-600"
         >
           <FileText size={13} style={{ color: accent }} className="shrink-0" />
-          <span className="truncate max-w-32">{doc.name}</span>
+          <span className="max-w-32 truncate">{doc.name}</span>
           <span className="text-neutral-600">{formatSize(doc.size)}</span>
           <button
             onClick={() => onRemove(doc.id)}
-            className="p-0.5 rounded text-neutral-500 hover:text-red-400 transition-colors cursor-pointer opacity-0 group-hover:opacity-100"
+            className="cursor-pointer rounded p-0.5 text-neutral-500 opacity-0 transition-colors group-hover:opacity-100 hover:text-red-400"
           >
             <X size={12} />
           </button>
         </div>
       ))}
       {isUploading && (
-        <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-neutral-700 bg-neutral-900 text-xs text-neutral-500 shadow-sm">
+        <div className="flex items-center gap-2 rounded-lg border border-neutral-700 bg-neutral-900 px-2.5 py-1.5 text-xs text-neutral-500 shadow-sm">
           <Loader2 size={13} className="spinner" style={{ color: accent }} />
           <span>Processing...</span>
         </div>

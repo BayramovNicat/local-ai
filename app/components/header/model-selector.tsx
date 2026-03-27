@@ -24,13 +24,13 @@ export function ModelSelector({
       <Tooltip content="Select Model" position="bottom" className="inline-block">
         <button
           onClick={onToggle}
-          className="flex items-center gap-2 px-3 py-2 rounded-lg border border-neutral-700 hover:border-neutral-500 transition-colors text-sm cursor-pointer max-w-45 sm:max-w-none"
+          className="flex max-w-45 cursor-pointer items-center gap-2 rounded-lg border border-neutral-700 px-3 py-2 text-sm transition-colors hover:border-neutral-500 sm:max-w-none"
           aria-label={`Select AI model, current: ${selected}`}
           aria-expanded={isOpen}
           aria-haspopup="listbox"
         >
           <Bot size={14} style={{ color: accent }} />
-          <span className="text-neutral-200 truncate">{selected}</span>
+          <span className="truncate text-neutral-200">{selected}</span>
           <ChevronDown
             size={14}
             className={`text-neutral-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
@@ -68,9 +68,7 @@ function ModelDropdownContent({
   const [activeIndex, setActiveIndex] = useState(0);
   const listRef = useRef<HTMLDivElement>(null);
 
-  const filtered = models.filter((m) =>
-    m.toLowerCase().includes(search.toLowerCase()),
-  );
+  const filtered = models.filter((m) => m.toLowerCase().includes(search.toLowerCase()));
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     switch (e.key) {
@@ -107,12 +105,12 @@ function ModelDropdownContent({
 
   return (
     <div
-      className="absolute right-0 top-full mt-2 w-72 rounded-xl bg-[#0a0a0a] shadow-2xl shadow-black/50 z-40 border border-neutral-800/50 flex flex-col overflow-hidden backdrop-blur-xl"
+      className="absolute top-full right-0 z-40 mt-2 flex w-72 flex-col overflow-hidden rounded-xl border border-neutral-800/50 bg-[#0a0a0a] shadow-2xl shadow-black/50 backdrop-blur-xl"
       role="listbox"
       aria-label="AI Models"
       onKeyDown={handleKeyDown}
     >
-      <div className="flex items-center gap-2 px-3 border-b border-neutral-800/50">
+      <div className="flex items-center gap-2 border-b border-neutral-800/50 px-3">
         <Search size={14} className="text-neutral-500" aria-hidden="true" />
         <input
           id="model-search"
@@ -120,7 +118,7 @@ function ModelDropdownContent({
           type="text"
           placeholder="Search models..."
           autoFocus
-          className="w-full py-3 text-sm bg-transparent text-neutral-200 placeholder-neutral-500 focus:outline-none"
+          className="w-full bg-transparent py-3 text-sm text-neutral-200 placeholder-neutral-500 focus:outline-none"
           onChange={(e) => {
             setSearch(e.target.value);
             setActiveIndex(0);
@@ -132,7 +130,7 @@ function ModelDropdownContent({
           aria-activedescendant={`model-option-${activeIndex}`}
         />
       </div>
-      <div id="model-list" ref={listRef} className="p-1 max-h-100 overflow-y-auto">
+      <div id="model-list" ref={listRef} className="max-h-100 overflow-y-auto p-1">
         {filtered.length > 0 ? (
           filtered.map((model, index) => (
             <button
@@ -141,25 +139,21 @@ function ModelDropdownContent({
               role="option"
               aria-selected={model === selected}
               onClick={() => onSelect(model)}
-              className={`w-full text-left px-3 py-2.5 text-sm transition-all cursor-pointer rounded-lg flex items-center justify-between group ${
+              className={`group flex w-full cursor-pointer items-center justify-between rounded-lg px-3 py-2.5 text-left text-sm transition-all ${
                 index === activeIndex
                   ? "bg-neutral-800 text-white"
                   : model === selected
-                  ? "bg-neutral-900/50 text-neutral-200"
-                  : "hover:bg-neutral-900 text-neutral-400 hover:text-neutral-200"
+                    ? "bg-neutral-900/50 text-neutral-200"
+                    : "text-neutral-400 hover:bg-neutral-900 hover:text-neutral-200"
               }`}
-              style={
-                model === selected ? { borderLeft: `2px solid ${accent}` } : undefined
-              }
+              style={model === selected ? { borderLeft: `2px solid ${accent}` } : undefined}
             >
-              <span
-                className={`truncate ${model === selected ? "text-white font-medium" : ""}`}
-              >
+              <span className={`truncate ${model === selected ? "font-medium text-white" : ""}`}>
                 {model}
               </span>
               {model === selected && (
                 <span
-                  className="text-[10px] uppercase tracking-wider font-bold px-1.5 py-0.5 rounded bg-neutral-800 text-neutral-400 group-hover:text-white transition-colors"
+                  className="rounded bg-neutral-800 px-1.5 py-0.5 text-[10px] font-bold tracking-wider text-neutral-400 uppercase transition-colors group-hover:text-white"
                   style={{ color: accent }}
                 >
                   active
@@ -168,7 +162,7 @@ function ModelDropdownContent({
             </button>
           ))
         ) : (
-          <div className="px-3 py-8 text-center text-neutral-500 text-sm" role="status">
+          <div className="px-3 py-8 text-center text-sm text-neutral-500" role="status">
             No models found
           </div>
         )}

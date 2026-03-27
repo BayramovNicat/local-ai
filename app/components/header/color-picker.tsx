@@ -16,13 +16,13 @@ export function ColorPicker({
   return (
     <>
       {isOpen && (
-        <div className="absolute right-0 top-full mt-2 w-48 rounded-xl bg-[#0a0a0a] shadow-2xl shadow-black/50 z-40 border border-neutral-800/50 p-2 space-y-2">
+        <div className="absolute top-full right-0 z-40 mt-2 w-48 space-y-2 rounded-xl border border-neutral-800/50 bg-[#0a0a0a] p-2 shadow-2xl shadow-black/50">
           <div className="grid grid-cols-4 gap-1.5">
             {presets.map((preset) => (
               <button
                 key={preset.hex}
                 onClick={() => onSelect(preset.hex)}
-                className="w-8 h-8 rounded-lg cursor-pointer transition-transform hover:scale-110 border-2"
+                className="h-8 w-8 cursor-pointer rounded-lg border-2 transition-transform hover:scale-110"
                 style={{
                   backgroundColor: preset.hex,
                   borderColor: accent === preset.hex ? "#ffffff" : "transparent",
@@ -37,10 +37,10 @@ export function ColorPicker({
               type="color"
               value={accent}
               onChange={(e) => onSelect(e.target.value)}
-              className="w-8 h-8 rounded cursor-pointer bg-transparent"
+              className="h-8 w-8 cursor-pointer rounded bg-transparent"
               aria-label="Pick custom accent color"
             />
-            <span className="text-xs text-neutral-400 font-mono">{accent}</span>
+            <span className="font-mono text-xs text-neutral-400">{accent}</span>
           </div>
         </div>
       )}

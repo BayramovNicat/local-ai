@@ -43,7 +43,7 @@ export const MODEL_CONFIGS: Record<string, { maxContextChars: number }> = {
   "Llama-3.2-1B-Instruct-q4f16_1-MLC": { maxContextChars: 2000 },
   "Llama-3.1-8B-Instruct-q4f32_1-MLC": { maxContextChars: 12000 },
   "Phi-3.5-mini-instruct-q4f16_1-MLC": { maxContextChars: 8000 },
-  "default": { maxContextChars: 1500 },
+  default: { maxContextChars: 1500 },
 };
 
 /**
@@ -64,7 +64,7 @@ export const SUPPORTED_DOC_TYPES = ".txt,.md,.pdf";
 export const RAG_SCORE_THRESHOLD_DOCS = 0.2;
 
 /**
- * Threshold for conversation memory retrieval. Higher (0.3) to prevent 
+ * Threshold for conversation memory retrieval. Higher (0.3) to prevent
  * "chatty" or loosely related past messages from distracting the model.
  */
 export const RAG_SCORE_THRESHOLD_CONV = 0.3;

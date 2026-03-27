@@ -71,16 +71,17 @@ app/
 ### Data Storage
 
 All data lives in IndexedDB (`local-ai` database):
+
 - **chats** — Out-of-line keys, stores `{title, messages}`
 - **embeddings** — In-line keys with indexes on `chatId`, `messageId`, `documentId`. In-memory cache avoids repeated DB reads
 - **documents** — Document metadata indexed by `chatId`
 
 ## Keyboard Shortcuts
 
-| Shortcut | Action |
-|---|---|
+| Shortcut      | Action               |
+| ------------- | -------------------- |
 | `Cmd+Shift+K` | Open semantic search |
-| `Cmd+Shift+O` | New chat |
+| `Cmd+Shift+O` | New chat             |
 
 ## Tech Stack
 

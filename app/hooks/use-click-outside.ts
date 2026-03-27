@@ -1,9 +1,6 @@
 import { useEffect, type RefObject } from "react";
 
-export function useClickOutside(
-  refs: RefObject<HTMLElement | null>[],
-  callbacks: (() => void)[],
-) {
+export function useClickOutside(refs: RefObject<HTMLElement | null>[], callbacks: (() => void)[]) {
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       refs.forEach((ref, i) => {

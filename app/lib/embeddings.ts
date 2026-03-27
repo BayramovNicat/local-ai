@@ -46,10 +46,7 @@ export function hybridScore(
   queryVector: number[],
   docVector: number[],
 ): number {
-  return (
-    cosineSimilarity(queryVector, docVector) * 0.5 +
-    keywordScore(queryTerms, lowerText) * 0.5
-  );
+  return cosineSimilarity(queryVector, docVector) * 0.5 + keywordScore(queryTerms, lowerText) * 0.5;
 }
 
 /**
@@ -70,7 +67,7 @@ export function searchEmbeddings(
     .filter((t) => t.length > 1);
 
   const isMap = historyMetadata instanceof Map;
-  const getTitle = (id: string) => isMap ? historyMetadata.get(id) : historyMetadata[id];
+  const getTitle = (id: string) => (isMap ? historyMetadata.get(id) : historyMetadata[id]);
 
   const scored = records
     .map((rec) => {
@@ -122,11 +119,7 @@ export function searchEmbeddings(
  * Simple sliding window splitter: ensure chunks are at most maxLength
  * and have a consistent overlap.
  */
-export function chunkText(
-  text: string,
-  maxLength = 512,
-  overlap = 64,
-): string[] {
+export function chunkText(text: string, maxLength = 512, overlap = 64): string[] {
   if (!text.trim()) return [];
   if (text.length <= maxLength) return [text.trim()];
 
@@ -135,13 +128,13 @@ export function chunkText(
 
   while (start < text.length) {
     let end = start + maxLength;
-    
+
     // If we're not at the very end, try to find a natural break point (space or newline)
     if (end < text.length) {
       const lastSpace = text.lastIndexOf(" ", end);
       const lastNewline = text.lastIndexOf("\n", end);
       const breakPoint = Math.max(lastSpace, lastNewline);
-      
+
       // Only break if it's not too far back (don't lose more than 20% of the chunk)
       if (breakPoint > start + maxLength * 0.8) {
         end = breakPoint;

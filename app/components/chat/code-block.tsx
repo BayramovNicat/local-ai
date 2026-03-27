@@ -15,10 +15,10 @@ export function CodeBlock({ children, ...props }: React.ComponentProps<"pre">) {
   }
 
   return (
-    <div className="relative group/code">
+    <div className="group/code relative">
       <button
         onClick={handleCopy}
-        className="absolute top-2 right-2 p-1.5 rounded-md text-neutral-500 hover:text-neutral-300 hover:bg-neutral-700/50 transition-all cursor-pointer opacity-0 group-hover/code:opacity-100"
+        className="absolute top-2 right-2 cursor-pointer rounded-md p-1.5 text-neutral-500 opacity-0 transition-all group-hover/code:opacity-100 hover:bg-neutral-700/50 hover:text-neutral-300"
       >
         {copied ? <Check size={13} /> : <Copy size={13} />}
       </button>

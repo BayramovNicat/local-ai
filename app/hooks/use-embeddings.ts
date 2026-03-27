@@ -29,21 +29,16 @@ export function useEmbeddings() {
     const promise = (async () => {
       const webllm = await import("@mlc-ai/web-llm");
 
-      const worker = new Worker(
-        new URL("../workers/embedding-engine.ts", import.meta.url),
-        { type: "module" },
-      );
+      const worker = new Worker(new URL("../workers/embedding-engine.ts", import.meta.url), {
+        type: "module",
+      });
       workerRef.current = worker;
 
-      const engine = await webllm.CreateWebWorkerMLCEngine(
-        worker,
-        EMBEDDING_MODEL,
-        {
-          initProgressCallback: (report) => {
-            console.log(`[Embedding] ${report.text}`);
-          },
+      const engine = await webllm.CreateWebWorkerMLCEngine(worker, EMBEDDING_MODEL, {
+        initProgressCallback: (report) => {
+          console.log(`[Embedding] ${report.text}`);
         },
-      );
+      });
 
       embeddingEngineRef.current = engine;
       setIsEmbeddingReady(true);
@@ -65,7 +60,7 @@ export function useEmbeddings() {
   const callWorker = useCallback(async (type: string, payload: unknown): Promise<unknown> => {
     if (!workerRef.current) throw new Error("Worker not initialized");
     const id = crypto.randomUUID();
-    
+
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
         workerRef.current?.removeEventListener("message", handler);
@@ -116,17 +111,20 @@ export function useEmbeddings() {
     getEmbeddingEngine();
   }, [getEmbeddingEngine]);
 
-  const saveEmbeddingsWithSync = useCallback(async (records: EmbeddingRecord[]) => {
-    if (records.length === 0) return;
-    await saveEmbeddings(records);
-    if (workerRef.current) {
-      try {
-        await callWorker("invalidate-cache", {});
-      } catch (e) {
-        console.warn("[Embedding] Failed to invalidate cache in worker:", e);
+  const saveEmbeddingsWithSync = useCallback(
+    async (records: EmbeddingRecord[]) => {
+      if (records.length === 0) return;
+      await saveEmbeddings(records);
+      if (workerRef.current) {
+        try {
+          await callWorker("invalidate-cache", {});
+        } catch (e) {
+          console.warn("[Embedding] Failed to invalidate cache in worker:", e);
+        }
       }
-    }
-  }, [callWorker]);
+    },
+    [callWorker],
+  );
 
   /**
    * Embed un-indexed messages from a chat and save vectors to IndexedDB.
@@ -214,12 +212,12 @@ export function useEmbeddings() {
         const queryVector = response.data[0].embedding;
 
         // Perform search in worker with lightweight metadata
-        const historyMetadata = Object.fromEntries(history.map(s => [s.id, s.title]));
+        const historyMetadata = Object.fromEntries(history.map((s) => [s.id, s.title]));
         return (await callWorker("custom-search", {
           queryVector,
           historyMetadata,
           query,
-          topK: 10
+          topK: 10,
         })) as SearchResult[];
       } catch (err) {
         console.error("[Embedding] Search failed:", err);

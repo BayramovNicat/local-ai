@@ -58,7 +58,14 @@ export default function Home() {
     getContext,
     removeDocument,
     cleanupDocuments,
-  } = useRag(getEmbeddingEngine, getEmbeddingEngineIfReady, initEmbeddingEngine, callWorker, selectedModel, saveEmbeddingsWithSync);
+  } = useRag(
+    getEmbeddingEngine,
+    getEmbeddingEngineIfReady,
+    initEmbeddingEngine,
+    callWorker,
+    selectedModel,
+    saveEmbeddingsWithSync,
+  );
 
   const {
     messages,
@@ -87,10 +94,7 @@ export default function Home() {
   // Advanced Animation Logic
   const [[prevChatId, prevMsgCount], setPrev] = useState([activeChatId, messages.length]);
 
-  const isFirstMsg =
-    prevChatId === activeChatId &&
-    prevMsgCount === 0 &&
-    messages.length > 0;
+  const isFirstMsg = prevChatId === activeChatId && prevMsgCount === 0 && messages.length > 0;
 
   if (prevChatId !== activeChatId || prevMsgCount !== messages.length) {
     setPrev([activeChatId, messages.length]);
@@ -155,10 +159,7 @@ export default function Home() {
     [selectChat],
   );
 
-  const handleSearch = useCallback(
-    (query: string) => search(query, history),
-    [search, history],
-  );
+  const handleSearch = useCallback((query: string) => search(query, history), [search, history]);
 
   const handleUpload = useCallback(
     async (files: File[]) => {
@@ -170,9 +171,7 @@ export default function Home() {
       const imageFiles: File[] = [];
       const docFiles: File[] = [];
 
-      const docExts = SUPPORTED_DOC_TYPES.split(",").map((ext) =>
-        ext.trim().toLowerCase(),
-      );
+      const docExts = SUPPORTED_DOC_TYPES.split(",").map((ext) => ext.trim().toLowerCase());
 
       for (const file of files) {
         const ext = `.${file.name.split(".").pop()?.toLowerCase()}`;
@@ -218,7 +217,7 @@ export default function Home() {
         onDeleteChat={handleDeleteChat}
         onClose={() => setIsSidebarOpen(false)}
       />
-      <div className="flex-1 relative min-w-0">
+      <div className="relative min-w-0 flex-1">
         <Header
           accent={accentColor}
           isSidebarOpen={isSidebarOpen}
@@ -235,9 +234,7 @@ export default function Home() {
           }}
           accentPresets={ACCENT_PRESETS}
           isModelDropdownOpen={isModelDropdownOpen}
-          onToggleModelDropdown={() =>
-            setIsModelDropdownOpen(!isModelDropdownOpen)
-          }
+          onToggleModelDropdown={() => setIsModelDropdownOpen(!isModelDropdownOpen)}
           models={AVAILABLE_MODELS}
           selectedModel={selectedModel}
           onSelectModel={handleModelSelect}
@@ -248,7 +245,7 @@ export default function Home() {
           className={`absolute inset-0 overflow-y-auto pt-16 pb-28 ${messages.length === 0 ? "flex items-center justify-center" : ""}`}
         >
           <div
-            className={`max-w-4xl mx-auto px-4 sm:px-6 md:px-8 ${messages.length === 0 ? "" : "space-y-6"}`}
+            className={`mx-auto max-w-4xl px-4 sm:px-6 md:px-8 ${messages.length === 0 ? "" : "space-y-6"}`}
             role="log"
             aria-live="polite"
             aria-relevant="additions text"
@@ -280,13 +277,13 @@ export default function Home() {
                   messages.length > 0 &&
                   messages[messages.length - 1].role === "assistant" &&
                   !messages[messages.length - 1].content && (
-                    <div className="flex justify-start animate-in fade-in duration-300">
-                      <div className="rounded-2xl px-4 py-3 bg-neutral-900/50 text-neutral-400 text-xs flex items-center gap-2 italic">
+                    <div className="animate-in fade-in flex justify-start duration-300">
+                      <div className="flex items-center gap-2 rounded-2xl bg-neutral-900/50 px-4 py-3 text-xs text-neutral-400 italic">
                         <span>AI is thinking</span>
                         <div className="flex gap-1">
-                          <span className="w-1 h-1 bg-neutral-500 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
-                          <span className="w-1 h-1 bg-neutral-500 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
-                          <span className="w-1 h-1 bg-neutral-500 rounded-full animate-bounce"></span>
+                          <span className="h-1 w-1 animate-bounce rounded-full bg-neutral-500 [animation-delay:-0.3s]"></span>
+                          <span className="h-1 w-1 animate-bounce rounded-full bg-neutral-500 [animation-delay:-0.15s]"></span>
+                          <span className="h-1 w-1 animate-bounce rounded-full bg-neutral-500"></span>
                         </div>
                       </div>
                     </div>
@@ -297,7 +294,7 @@ export default function Home() {
         </main>
 
         <div
-          className={`absolute left-0 right-0 z-20 ${
+          className={`absolute right-0 left-0 z-20 ${
             messages.length > 0
               ? `${isFirstMsg ? "transition-all duration-300 ease-in-out" : ""} bottom-0`
               : "top-1/2 translate-y-24"
@@ -321,7 +318,6 @@ export default function Home() {
           />
         </div>
       </div>
-
       <SearchModal
         key={isSearchOpen ? "open" : "closed"}
         isOpen={isSearchOpen}
@@ -332,6 +328,7 @@ export default function Home() {
         onSearch={handleSearch}
         onSelectResult={handleSearchSelect}
         onClose={() => setIsSearchOpen(false)}
-      />    </div>
+      />{" "}
+    </div>
   );
 }

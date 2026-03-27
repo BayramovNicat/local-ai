@@ -59,17 +59,17 @@ export function MessageInput({
 
   return (
     <div
-      className={`p-3 sm:p-4 transition-all duration-300 ease-in-out ${
+      className={`p-3 transition-all duration-300 ease-in-out sm:p-4 ${
         isCentered ? "bg-transparent" : "bg-[#0a0a0a]/40 backdrop-blur-md"
       }`}
     >
       <div
-        className={`max-w-4xl mx-auto transition-all duration-300 ease-in-out ${
+        className={`mx-auto max-w-4xl transition-all duration-300 ease-in-out ${
           isCentered ? "scale-[1.02]" : "scale-100"
         }`}
       >
         <div
-          className="rounded-xl border border-neutral-700 transition-colors bg-[#0a0a0a]"
+          className="rounded-xl border border-neutral-700 bg-[#0a0a0a] transition-colors"
           style={{ borderColor: hasContent ? `${accent}4D` : undefined }}
         >
           <DocumentPanel
@@ -81,16 +81,12 @@ export function MessageInput({
           {attachments.length > 0 && (
             <div className="flex flex-wrap gap-2 px-3 pt-3">
               {attachments.map((att) => (
-                <div key={att.id} className="relative group/att">
+                <div key={att.id} className="group/att relative">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={att.url}
-                    alt={att.name}
-                    className="w-16 h-16 rounded-lg object-cover"
-                  />
+                  <img src={att.url} alt={att.name} className="h-16 w-16 rounded-lg object-cover" />
                   <button
                     onClick={() => onRemoveAttachment(att.id)}
-                    className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-neutral-800 text-neutral-400 hover:text-white flex items-center justify-center opacity-0 group-hover/att:opacity-100 transition-opacity cursor-pointer"
+                    className="absolute -top-1.5 -right-1.5 flex h-5 w-5 cursor-pointer items-center justify-center rounded-full bg-neutral-800 text-neutral-400 opacity-0 transition-opacity group-hover/att:opacity-100 hover:text-white"
                   >
                     <X size={10} />
                   </button>
@@ -99,14 +95,10 @@ export function MessageInput({
             </div>
           )}
           <div className="flex items-end gap-2 p-2">
-            <Tooltip
-              content="Attach files"
-              position="top"
-              className="inline-block"
-            >
+            <Tooltip content="Attach files" position="top" className="inline-block">
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="shrink-0 p-2 rounded-lg text-neutral-500 hover:text-neutral-300 transition-colors cursor-pointer"
+                className="shrink-0 cursor-pointer rounded-lg p-2 text-neutral-500 transition-colors hover:text-neutral-300"
               >
                 <Paperclip size={18} />
               </button>
@@ -132,15 +124,13 @@ export function MessageInput({
               contentEditable
               aria-label="Message input"
               data-placeholder="Message local.ai..."
-              className="flex-1 min-h-20 max-h-50 overflow-y-auto text-sm text-neutral-200 focus:outline-none empty:before:content-[attr(data-placeholder)] empty:before:text-neutral-500 [&_img]:max-w-full [&_img]:max-h-75 [&_img]:rounded-lg [&_img]:my-1"
+              className="max-h-50 min-h-20 flex-1 overflow-y-auto text-sm text-neutral-200 empty:before:text-neutral-500 empty:before:content-[attr(data-placeholder)] focus:outline-none [&_img]:my-1 [&_img]:max-h-75 [&_img]:max-w-full [&_img]:rounded-lg"
               onInput={() => setInput(editorRef.current?.innerText || "")}
               onPaste={async (e) => {
                 const items = e.clipboardData?.items;
                 if (!items) return;
 
-                const hasFiles = Array.from(items).some(
-                  (i) => i.kind === "file",
-                );
+                const hasFiles = Array.from(items).some((i) => i.kind === "file");
                 if (hasFiles) {
                   e.preventDefault();
                   const files: File[] = [];
@@ -171,33 +161,23 @@ export function MessageInput({
               }}
             />
             {isStreaming ? (
-              <Tooltip
-                content="Stop generation"
-                position="top"
-                className="inline-block"
-              >
+              <Tooltip content="Stop generation" position="top" className="inline-block">
                 <button
                   onClick={onStop}
-                  className="shrink-0 p-2 rounded-lg text-neutral-400 hover:text-white hover:bg-neutral-800 transition-all cursor-pointer"
+                  className="shrink-0 cursor-pointer rounded-lg p-2 text-neutral-400 transition-all hover:bg-neutral-800 hover:text-white"
                 >
                   <Square size={18} fill="currentColor" />
                 </button>
               </Tooltip>
             ) : (
-              <Tooltip
-                content="Send message"
-                position="top"
-                className="inline-block"
-              >
+              <Tooltip content="Send message" position="top" className="inline-block">
                 <button
                   onClick={() => {
                     onSend();
                   }}
                   disabled={!hasContent}
-                  className={`shrink-0 p-2 rounded-lg transition-all cursor-pointer ${
-                    hasContent
-                      ? "text-black"
-                      : "text-neutral-600 cursor-not-allowed"
+                  className={`shrink-0 cursor-pointer rounded-lg p-2 transition-all ${
+                    hasContent ? "text-black" : "cursor-not-allowed text-neutral-600"
                   }`}
                   style={hasContent ? { backgroundColor: accent } : undefined}
                 >

@@ -15,11 +15,7 @@ interface MessageListProps {
   scrollContainerRef: React.RefObject<HTMLElement | null>;
 }
 
-export function MessageList({
-  messages,
-  onEdit,
-  scrollContainerRef,
-}: MessageListProps) {
+export function MessageList({ messages, onEdit, scrollContainerRef }: MessageListProps) {
   const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE_MESSAGES);
   const isLoadingMoreRef = useRef(false);
 
@@ -36,25 +32,25 @@ export function MessageList({
         !isLoadingMoreRef.current
       ) {
         isLoadingMoreRef.current = true;
-        
+
         const prevScrollHeight = container.scrollHeight;
         const prevScrollTop = container.scrollTop;
 
         setVisibleCount((prev) => {
           const nextCount = Math.min(prev + LOAD_MORE_MESSAGES_INCREMENT, messages.length);
-          
+
           // Use requestAnimationFrame to adjust scroll after the new messages are rendered
           requestAnimationFrame(() => {
             if (!container) return;
             const newScrollHeight = container.scrollHeight;
             const heightDiff = newScrollHeight - prevScrollHeight;
-            
+
             if (heightDiff > 0) {
               container.scrollTop = prevScrollTop + heightDiff;
             }
             isLoadingMoreRef.current = false;
           });
-          
+
           return nextCount;
         });
       }
@@ -70,11 +66,7 @@ export function MessageList({
   return (
     <>
       {visibleMessages.map((msg) => (
-        <ChatMessage
-          key={msg.id}
-          message={msg}
-          onEdit={onEdit}
-        />
+        <ChatMessage key={msg.id} message={msg} onEdit={onEdit} />
       ))}
     </>
   );

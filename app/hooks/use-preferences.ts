@@ -54,13 +54,10 @@ export function usePreferences() {
 
   const setSelectedModel = useCallback((v: string) => modelStore.set(v), []);
   const setAccentColor = useCallback((v: string) => accentStore.set(v), []);
-  const setIsSidebarOpen = useCallback(
-    (v: boolean | ((prev: boolean) => boolean)) => {
-      const next = typeof v === "function" ? v(sidebarStore.getSnapshot() === "true") : v;
-      sidebarStore.set(String(next));
-    },
-    [],
-  );
+  const setIsSidebarOpen = useCallback((v: boolean | ((prev: boolean) => boolean)) => {
+    const next = typeof v === "function" ? v(sidebarStore.getSnapshot() === "true") : v;
+    sidebarStore.set(String(next));
+  }, []);
 
   return {
     selectedModel,

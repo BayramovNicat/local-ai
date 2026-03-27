@@ -121,19 +121,14 @@ export function Tooltip({
   };
 
   return (
-    <div
-      ref={triggerRef}
-      className={className}
-      onMouseEnter={show}
-      onMouseLeave={hide}
-    >
+    <div ref={triggerRef} className={className} onMouseEnter={show} onMouseLeave={hide}>
       {children}
       {isVisible &&
         typeof document !== "undefined" &&
         createPortal(
           <div
             ref={tooltipRef}
-            className="fixed z-9999 px-2.5 py-1.5 rounded-lg bg-[#0a0a0a] border border-neutral-800 shadow-2xl animate-[fadeIn_0.1s_ease-out] pointer-events-none whitespace-nowrap"
+            className="pointer-events-none fixed z-9999 animate-[fadeIn_0.1s_ease-out] rounded-lg border border-neutral-800 bg-[#0a0a0a] px-2.5 py-1.5 whitespace-nowrap shadow-2xl"
             style={{
               top: coords.top,
               left: coords.left,
@@ -143,7 +138,7 @@ export function Tooltip({
             <div className="flex items-center gap-2.5 text-[11px] font-medium text-neutral-300">
               {content}
               {shortcut && (
-                <span className="px-1.5 py-0.5 rounded bg-neutral-900 text-neutral-500 font-sans text-[10px] border border-neutral-700/50">
+                <span className="rounded border border-neutral-700/50 bg-neutral-900 px-1.5 py-0.5 font-sans text-[10px] text-neutral-500">
                   {shortcut}
                 </span>
               )}

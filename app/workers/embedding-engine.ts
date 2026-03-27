@@ -1,7 +1,16 @@
 import { WebWorkerMLCEngineHandler } from "@mlc-ai/web-llm";
-import { loadAllEmbeddings, loadDocEmbeddingsByChatId, loadConvEmbeddingsExcludingChat, invalidateEmbeddingsCache } from "../lib/db";
+import {
+  loadAllEmbeddings,
+  loadDocEmbeddingsByChatId,
+  loadConvEmbeddingsExcludingChat,
+  invalidateEmbeddingsCache,
+} from "../lib/db";
 import { searchEmbeddings, hybridScore } from "../lib/embeddings";
-import { RAG_SCORE_THRESHOLD_DOCS, MAX_CONTEXT_CHARS, RAG_SCORE_THRESHOLD_CONV } from "../data/constants";
+import {
+  RAG_SCORE_THRESHOLD_DOCS,
+  MAX_CONTEXT_CHARS,
+  RAG_SCORE_THRESHOLD_CONV,
+} from "../data/constants";
 import type { ChatSession } from "../types";
 
 const handler = new WebWorkerMLCEngineHandler();
@@ -27,22 +36,21 @@ self.onmessage = async (e: MessageEvent) => {
     }
     return;
   }
-if (type === "custom-rag-context") {
-  const { query, queryVector, chatId, historyMetadata, maxContextChars } = payload;
-  const limit = maxContextChars || MAX_CONTEXT_CHARS;
+  if (type === "custom-rag-context") {
+    const { query, queryVector, chatId, historyMetadata, maxContextChars } = payload;
+    const limit = maxContextChars || MAX_CONTEXT_CHARS;
 
-  // Pre-calculate query terms for hybrid scoring
-  const queryTerms = query
-    .toLowerCase()
-    .split(/\s+/)
-    .filter((t: string) => t.length > 1);
+    // Pre-calculate query terms for hybrid scoring
+    const queryTerms = query
+      .toLowerCase()
+      .split(/\s+/)
+      .filter((t: string) => t.length > 1);
 
-  try {
-    const [docPool, convPool] = await Promise.all([
-      loadDocEmbeddingsByChatId(chatId),
-      loadConvEmbeddingsExcludingChat(chatId),
-    ]);
-
+    try {
+      const [docPool, convPool] = await Promise.all([
+        loadDocEmbeddingsByChatId(chatId),
+        loadConvEmbeddingsExcludingChat(chatId),
+      ]);
 
       // Document Context
       const scoredDocs = docPool
@@ -86,7 +94,7 @@ if (type === "custom-rag-context") {
       self.postMessage({
         type: "custom-rag-context-results",
         payload: { docContext: docContext.trim(), convContext: convContext.trim() },
-        id: e.data.id
+        id: e.data.id,
       });
     } catch (err) {
       self.postMessage({ type: "custom-rag-context-error", payload: String(err), id: e.data.id });

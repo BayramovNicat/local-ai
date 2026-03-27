@@ -48,28 +48,25 @@ export function Header({
     if (isModelDropdownOpen) onToggleModelDropdown();
   }, [isModelDropdownOpen, onToggleModelDropdown]);
 
-  useClickOutside(
-    [colorPickerRef, modelDropdownRef],
-    [closeColorPicker, closeModelDropdown],
-  );
+  useClickOutside([colorPickerRef, modelDropdownRef], [closeColorPicker, closeModelDropdown]);
 
   return (
-    <header className="absolute top-0 left-0 right-0 flex items-center justify-between px-3 sm:px-4 py-3 bg-[#0a0a0a]/40 backdrop-blur-md z-10">
+    <header className="absolute top-0 right-0 left-0 z-10 flex items-center justify-between bg-[#0a0a0a]/40 px-3 py-3 backdrop-blur-md sm:px-4">
       <div className="flex items-center gap-3">
-        <Tooltip 
-          content={isSidebarOpen ? "Collapse Sidebar" : "Expand Sidebar"} 
-          position="bottom" 
+        <Tooltip
+          content={isSidebarOpen ? "Collapse Sidebar" : "Expand Sidebar"}
+          position="bottom"
           className="inline-block"
         >
           <button
             onClick={onToggleSidebar}
-            className="p-2 rounded-lg text-neutral-400 hover:bg-neutral-800 hover:text-neutral-200 transition-colors cursor-pointer"
+            className="cursor-pointer rounded-lg p-2 text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-neutral-200"
             aria-label={isSidebarOpen ? "Collapse Sidebar" : "Expand Sidebar"}
           >
             {isSidebarOpen ? <X size={18} /> : <Menu size={18} />}
           </button>
         </Tooltip>
-        <h1 className="text-base font-semibold text-white tracking-tight">
+        <h1 className="text-base font-semibold tracking-tight text-white">
           local<span style={{ color: accent }}>.ai</span>
         </h1>
       </div>
@@ -78,7 +75,7 @@ export function Header({
         <Tooltip content="Search" shortcut="⇧⌘K" position="bottom" className="inline-block">
           <button
             onClick={onOpenSearch}
-            className="p-2 rounded-lg text-neutral-400 hover:bg-neutral-800 hover:text-neutral-200 transition-colors cursor-pointer"
+            className="cursor-pointer rounded-lg p-2 text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-neutral-200"
             aria-label="Search conversation history"
           >
             <Search size={18} />
@@ -88,7 +85,7 @@ export function Header({
           <Tooltip content="Theme" position="bottom" className="inline-block">
             <button
               onClick={onToggleColorPicker}
-              className="p-2 rounded-lg text-neutral-400 hover:bg-neutral-800 hover:text-neutral-200 transition-colors cursor-pointer"
+              className="cursor-pointer rounded-lg p-2 text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-neutral-200"
               aria-label="Change accent color"
             >
               <Palette size={18} />

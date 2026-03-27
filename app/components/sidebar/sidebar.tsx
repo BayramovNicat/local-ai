@@ -25,17 +25,12 @@ export function Sidebar({
 
   return (
     <>
-      {isOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 z-20 md:hidden"
-          onClick={onClose}
-        />
-      )}
+      {isOpen && <div className="fixed inset-0 z-20 bg-black/50 md:hidden" onClick={onClose} />}
 
       <aside
         className={`${
-          isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0 md:w-0"
-        } fixed md:relative z-30 md:z-auto w-72 h-full transition-all duration-300 flex flex-col bg-[#0a0a0a] ${
+          isOpen ? "translate-x-0" : "-translate-x-full md:w-0 md:translate-x-0"
+        } fixed z-30 flex h-full w-72 flex-col bg-[#0a0a0a] transition-all duration-300 md:relative md:z-auto ${
           isOpen ? "overflow-hidden" : "md:w-0 md:overflow-hidden"
         }`}
       >
@@ -43,8 +38,11 @@ export function Sidebar({
           <Tooltip content="New Chat" shortcut="⌘⇧O" position="right">
             <button
               onClick={onNewChat}
-              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl transition-colors text-sm font-medium cursor-pointer border truncate whitespace-nowrap"
-              style={{ borderColor: "color-mix(in srgb, var(--accent) 30%, transparent)", color: "var(--accent)" }}
+              className="flex w-full cursor-pointer items-center justify-center gap-2 truncate rounded-xl border px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors"
+              style={{
+                borderColor: "color-mix(in srgb, var(--accent) 30%, transparent)",
+                color: "var(--accent)",
+              }}
             >
               <Plus size={16} className="shrink-0" />
               <span className="truncate">New Chat</span>
@@ -52,11 +50,8 @@ export function Sidebar({
           </Tooltip>
         </div>
 
-        <div 
-          ref={scrollRef}
-          className="flex-1 overflow-y-auto p-3 space-y-1"
-        >
-          <p className="px-2 py-1 text-xs font-medium text-neutral-500 uppercase tracking-wider truncate">
+        <div ref={scrollRef} className="flex-1 space-y-1 overflow-y-auto p-3">
+          <p className="truncate px-2 py-1 text-xs font-medium tracking-wider text-neutral-500 uppercase">
             History
           </p>
           <SidebarList

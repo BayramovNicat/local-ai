@@ -82,13 +82,13 @@ export async function getStorageUsage(): Promise<{ usage: number; quota: number 
 function prepareChatForSave(chat: Omit<ChatSession, "id">): Omit<ChatSession, "id"> {
   return {
     ...chat,
-    messages: chat.messages.map(msg => ({
+    messages: chat.messages.map((msg) => ({
       ...msg,
-      attachments: msg.attachments?.map(att => ({
+      attachments: msg.attachments?.map((att) => ({
         ...att,
         url: "", // Don't persist transient blob: URLs
-      }))
-    }))
+      })),
+    })),
   };
 }
 
@@ -111,18 +111,15 @@ export function restoreChatFromSave(chat: ChatSession, oldChat?: ChatSession): C
           // Only create if we have a blob and no URL
           return {
             ...att,
-            url: att.blob ? URL.createObjectURL(att.blob) : att.url
+            url: att.blob ? URL.createObjectURL(att.blob) : att.url,
           };
-        })
+        }),
       };
-    })
+    }),
   };
 }
 
-export async function saveChat(
-  id: string,
-  data: Omit<ChatSession, "id">,
-): Promise<void> {
+export async function saveChat(id: string, data: Omit<ChatSession, "id">): Promise<void> {
   const db = await openDB();
   const preparedData = prepareChatForSave(data);
   return new Promise((resolve, reject) => {
@@ -144,7 +141,7 @@ export async function loadAllChats(restoreUrls = false): Promise<ChatSession[]> 
       const keys = keysReq.result as string[];
       const vals = valsReq.result as Omit<ChatSession, "id">[];
       const chats = keys.map((id, i) => ({ id, ...vals[i] }));
-      resolve(restoreUrls ? chats.map((c) => restoreChatFromSave(c)) : chats as ChatSession[]);
+      resolve(restoreUrls ? chats.map((c) => restoreChatFromSave(c)) : (chats as ChatSession[]));
     };
     tx.onerror = () => reject(tx.error);
   });
@@ -199,16 +196,14 @@ export function invalidateEmbeddingsCache() {
   _embeddedMsgIds = null;
 }
 
-export async function saveEmbeddings(
-  records: EmbeddingRecord[],
-): Promise<void> {
+export async function saveEmbeddings(records: EmbeddingRecord[]): Promise<void> {
   if (records.length === 0) return;
   const db = await openDB();
 
   // Normalize vectors for faster dot-product search
-  const normalizedRecords = records.map(r => ({
+  const normalizedRecords = records.map((r) => ({
     ...r,
-    vector: normalizeVector(r.vector)
+    vector: normalizeVector(r.vector),
   }));
 
   return new Promise((resolve, reject) => {
@@ -250,9 +245,7 @@ export async function loadAllEmbeddings(): Promise<EmbeddingRecord[]> {
   });
 }
 
-export async function deleteEmbeddingsByChatId(
-  chatId: string,
-): Promise<void> {
+export async function deleteEmbeddingsByChatId(chatId: string): Promise<void> {
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_EMBEDDINGS, "readwrite");
@@ -274,9 +267,7 @@ export async function deleteEmbeddingsByChatId(
   });
 }
 
-export async function deleteEmbeddingsByDocumentId(
-  documentId: string,
-): Promise<void> {
+export async function deleteEmbeddingsByDocumentId(documentId: string): Promise<void> {
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_EMBEDDINGS, "readwrite");
@@ -302,9 +293,7 @@ export async function deleteEmbeddingsByDocumentId(
  * Load document embeddings for a specific chat (uses chatId index).
  * We ALWAYS use IndexedDB index here because it's O(log N) vs O(N) cache filtering.
  */
-export async function loadDocEmbeddingsByChatId(
-  chatId: string,
-): Promise<EmbeddingRecord[]> {
+export async function loadDocEmbeddingsByChatId(chatId: string): Promise<EmbeddingRecord[]> {
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_EMBEDDINGS, "readonly");
@@ -329,7 +318,7 @@ export async function loadConvEmbeddingsExcludingChat(
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_EMBEDDINGS, "readonly");
     const index = tx.objectStore(STORE_EMBEDDINGS).index("chatId");
-    
+
     // Two ranges: everything before and after the excluded chatId
     const ranges = [
       IDBKeyRange.upperBound(excludeChatId, true),
@@ -356,13 +345,13 @@ export async function loadConvEmbeddingsExcludingChat(
 
 export async function getEmbeddedMessageIds(): Promise<Set<string>> {
   if (_embeddedMsgIds) return _embeddedMsgIds;
-  
+
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_EMBEDDINGS, "readonly");
     const index = tx.objectStore(STORE_EMBEDDINGS).index("messageId");
     const results = new Set<string>();
-    
+
     // openKeyCursor only retrieves keys, much faster than loading full objects (vectors)
     const req = index.openKeyCursor();
     req.onsuccess = (e) => {
@@ -372,7 +361,7 @@ export async function getEmbeddedMessageIds(): Promise<Set<string>> {
         cursor.continue();
       }
     };
-    
+
     tx.oncomplete = () => {
       _embeddedMsgIds = results;
       resolve(results);
@@ -393,9 +382,7 @@ export async function saveDocument(doc: Document): Promise<void> {
   });
 }
 
-export async function getDocumentsByChatId(
-  chatId: string,
-): Promise<Document[]> {
+export async function getDocumentsByChatId(chatId: string): Promise<Document[]> {
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_DOCUMENTS, "readonly");
@@ -417,9 +404,7 @@ export async function deleteDocument(id: string): Promise<void> {
   });
 }
 
-export async function deleteDocumentsByChatId(
-  chatId: string,
-): Promise<void> {
+export async function deleteDocumentsByChatId(chatId: string): Promise<void> {
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_DOCUMENTS, "readwrite");
