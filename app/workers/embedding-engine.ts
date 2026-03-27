@@ -27,25 +27,27 @@ self.onmessage = async (e: MessageEvent) => {
     }
     return;
   }
+if (type === "custom-rag-context") {
+  const { query, queryVector, chatId, history, maxContextChars } = payload;
+  const limit = maxContextChars || MAX_CONTEXT_CHARS;
 
-  if (type === "custom-rag-context") {
-    const { query, queryVector, chatId, history, maxContextChars } = payload;
-    const limit = maxContextChars || MAX_CONTEXT_CHARS;
-    
-    // Pre-calculate query terms for hybrid scoring
-    const queryTerms = query
-      .toLowerCase()
-      .split(/\s+/)
-      .filter((t: string) => t.length > 1);
+  // Pre-calculate query terms for hybrid scoring
+  const queryTerms = query
+    .toLowerCase()
+    .split(/\s+/)
+    .filter((t: string) => t.length > 1);
 
-    try {
-      // Ensure cache is populated
-      await loadAllEmbeddings();
-      
-      const [docPool, convPool] = await Promise.all([
-        loadDocEmbeddingsByChatId(chatId),
-        loadConvEmbeddingsExcludingChat(chatId),
-      ]);
+  try {
+    // NOTE: We DO NOT call loadAllEmbeddings() here. 
+    // loadDocEmbeddingsByChatId and loadConvEmbeddingsExcludingChat 
+    // will use IndexedDB indexes if the cache is null, which is 
+    // much more memory efficient for large databases.
+
+    const [docPool, convPool] = await Promise.all([
+      loadDocEmbeddingsByChatId(chatId),
+      loadConvEmbeddingsExcludingChat(chatId),
+    ]);
+
 
       // Document Context
       const scoredDocs = docPool

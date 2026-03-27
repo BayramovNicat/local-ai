@@ -58,26 +58,32 @@ export function useChat(
       
       if (type === "chat-update") {
         const { chatId, messages: rawMessages, title } = payload;
-        // Recreate ObjectURLs for attachments if they exist (they arrive as Blobs)
-        const restored = restoreChatFromSave({ id: chatId, title: title || "", messages: rawMessages });
-        const messages = restored.messages;
-
+        
         setHistory((prev) => {
-          const exists = prev.some(s => s.id === chatId);
-          if (exists) {
-            return prev.map((s) =>
+          const oldSession = prev.find(s => s.id === chatId);
+          // Recreate ObjectURLs for attachments if they exist, but REUSE old ones if possible
+          const restored = restoreChatFromSave({ id: chatId, title: title || "", messages: rawMessages }, oldSession);
+          const messages = restored.messages;
+
+          if (oldSession) {
+            const newHistory = prev.map((s) =>
               s.id === chatId
                 ? { ...s, messages, ...(title && { title }) }
                 : s
             );
+            
+            if (activeChatIdRef.current === chatId) {
+              setMessages(messages);
+            }
+            return newHistory;
           } else {
-            return [{ id: chatId, title: title || "New Chat", messages }, ...prev];
+            const newHistory = [{ id: chatId, title: title || "New Chat", messages }, ...prev];
+            if (activeChatIdRef.current === chatId) {
+              setMessages(messages);
+            }
+            return newHistory;
           }
         });
-        
-        if (activeChatIdRef.current === chatId) {
-          setMessages(messages);
-        }
       } else if (type === "chat-delete") {
         const { chatId } = payload;
         setHistory((prev) => prev.filter((s) => s.id !== chatId));
@@ -166,29 +172,34 @@ export function useChat(
 
   const updateHistory = useCallback(
     (chatId: string, msgs: Message[], title?: string) => {
+      let updatedSession: ChatSession | undefined;
+      
       setHistory((prev) => {
         const updated = prev.map((s) =>
           s.id === chatId
             ? { ...s, messages: msgs, ...(title && { title }) }
             : s,
         );
-        const session = updated.find((s) => s.id === chatId);
-        if (session) {
-          saveChatToDB(chatId, {
-            title: session.title,
-            messages: session.messages,
-          }).catch((err) => {
-            console.error(err);
-            if (isQuotaExceededError(err)) {
-              errorToast("Storage quota exceeded. Please delete some chats.");
-            } else {
-              errorToast("Failed to save chat to database.");
-            }
-          });
-          broadcastUpdate(chatId, session.messages, session.title);
-        }
+        updatedSession = updated.find((s) => s.id === chatId);
         return updated;
       });
+
+      // Move side effects OUT of the state updater
+      if (updatedSession) {
+        const session = updatedSession;
+        saveChatToDB(chatId, {
+          title: session.title,
+          messages: session.messages,
+        }).catch((err) => {
+          console.error(err);
+          if (isQuotaExceededError(err)) {
+            errorToast("Storage quota exceeded. Please delete some chats.");
+          } else {
+            errorToast("Failed to save chat to database.");
+          }
+        });
+        broadcastUpdate(chatId, session.messages, session.title);
+      }
     },
     [broadcastUpdate, errorToast],
   );
@@ -239,10 +250,12 @@ export function useChat(
     const text = input.trim();
     if (!text && attachments.length === 0) return;
 
-    const isFirstMessage = messages.length === 0;
+    // Use current state via Ref to avoid stale closure issues
+    const currentMessages = messagesRef.current;
+    const isFirstMessage = currentMessages.length === 0;
     forceScrollRef.current = true;
 
-    let currentChatId = activeChatId;
+    let currentChatId = activeChatIdRef.current;
     if (!currentChatId) currentChatId = await createChat(text);
 
     const userMsg: Message = {
@@ -269,7 +282,7 @@ export function useChat(
       let docContext = "",
         convContext = "";
       if (getContext && currentChatId) {
-        const result = await getContext(text, currentChatId, history);
+        const result = await getContext(text, currentChatId, historyRef.current);
         docContext = result.docContext;
         convContext = result.convContext;
       }
@@ -295,8 +308,8 @@ export function useChat(
       totalChars += userMsg.content.length;
       
       // Iterate backwards through previous messages
-      for (let i = messages.length - 1; i >= 0; i--) {
-        const msg = messages[i];
+      for (let i = currentMessages.length - 1; i >= 0; i--) {
+        const msg = currentMessages[i];
         if (historyToKeep.length >= MAX_HISTORY_MSGS) break;
         if (totalChars + msg.content.length > MAX_HISTORY_CHARS) break;
         
@@ -334,10 +347,10 @@ export function useChat(
       }
 
       // Final update to ensure we have the complete message
-      const finalMessages = messages.concat(userMsg, {
-        ...assistantMsg,
-        content: currentText,
-      });
+      // Re-calculate using latest state to be safe (messagesRef.current might have changed during generation)
+      const finalMessages = messagesRef.current.map(m => 
+        m.id === assistantId ? { ...m, content: currentText } : m
+      );
       setMessages(finalMessages);
 
       if (isFirstMessage) {
@@ -380,10 +393,9 @@ export function useChat(
     } catch (err) {
       console.error(err);
       errorToast("Failed to generate response. Please check WebGPU support.");
-      const errorMessages = messages.concat(userMsg, {
-        ...assistantMsg,
-        content: "Error generating response.",
-      });
+      const errorMessages = messagesRef.current.map(m => 
+        m.id === assistantId ? { ...m, content: "Error generating response." } : m
+      );
       setMessages(errorMessages);
       if (currentChatId) {
         updateHistory(currentChatId, errorMessages);
@@ -394,11 +406,8 @@ export function useChat(
   }, [
     input,
     attachments,
-    messages,
-    activeChatId,
     waitForEngine,
     getContext,
-    history,
     createChat,
     updateHistory,
     errorToast,

@@ -42,6 +42,13 @@ export function MessageInput({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const hasContent = input.trim() || attachments.length > 0;
 
+  // Sync state to editor (for editing messages)
+  useEffect(() => {
+    if (editorRef.current && editorRef.current.innerText !== input) {
+      editorRef.current.innerText = input;
+    }
+  }, [input]);
+
   // Auto-focus logic
   useEffect(() => {
     // Focus on mount and whenever chat context changes
@@ -130,7 +137,7 @@ export function MessageInput({
               aria-label="Message input"
               data-placeholder="Message local.ai..."
               className="flex-1 min-h-20 max-h-50 overflow-y-auto text-sm text-neutral-200 focus:outline-none empty:before:content-[attr(data-placeholder)] empty:before:text-neutral-500 [&_img]:max-w-full [&_img]:max-h-75 [&_img]:rounded-lg [&_img]:my-1"
-              onInput={() => setInput(editorRef.current?.textContent || "")}
+              onInput={() => setInput(editorRef.current?.innerText || "")}
               onPaste={async (e) => {
                 const items = e.clipboardData?.items;
                 if (!items) return;
@@ -163,7 +170,6 @@ export function MessageInput({
                   e.preventDefault();
                   if (!isStreaming) {
                     onSend();
-                    if (editorRef.current) editorRef.current.textContent = "";
                   }
                 }
               }}
@@ -190,7 +196,6 @@ export function MessageInput({
                 <button
                   onClick={() => {
                     onSend();
-                    if (editorRef.current) editorRef.current.textContent = "";
                   }}
                   disabled={!hasContent}
                   className={`shrink-0 p-2 rounded-lg transition-all cursor-pointer ${

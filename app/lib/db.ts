@@ -92,16 +92,26 @@ function prepareChatForSave(chat: Omit<ChatSession, "id">): Omit<ChatSession, "i
   };
 }
 
-export function restoreChatFromSave(chat: ChatSession): ChatSession {
+export function restoreChatFromSave(chat: ChatSession, oldChat?: ChatSession): ChatSession {
   return {
     ...chat,
-    messages: chat.messages.map(msg => ({
-      ...msg,
-      attachments: msg.attachments?.map(att => ({
-        ...att,
-        url: att.blob ? URL.createObjectURL(att.blob) : att.url
-      }))
-    }))
+    messages: chat.messages.map((msg) => {
+      const oldMsg = oldChat?.messages.find((m) => m.id === msg.id);
+      return {
+        ...msg,
+        attachments: msg.attachments?.map((att) => {
+          const oldAtt = oldMsg?.attachments?.find((a) => a.id === att.id);
+          // If we already have a valid Blob URL for this attachment, REUSE it!
+          if (oldAtt && oldAtt.url.startsWith("blob:")) {
+            return { ...att, url: oldAtt.url };
+          }
+          return {
+            ...att,
+            url: att.blob ? URL.createObjectURL(att.blob) : att.url
+          };
+        })
+      };
+    })
   };
 }
 
@@ -130,7 +140,7 @@ export async function loadAllChats(): Promise<ChatSession[]> {
       const keys = keysReq.result as string[];
       const vals = valsReq.result as Omit<ChatSession, "id">[];
       const chats = keys.map((id, i) => ({ id, ...vals[i] }));
-      resolve(chats.map(restoreChatFromSave));
+      resolve(chats.map((c) => restoreChatFromSave(c)));
     };
     tx.onerror = () => reject(tx.error);
   });
