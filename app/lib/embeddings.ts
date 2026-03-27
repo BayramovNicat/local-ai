@@ -126,75 +126,43 @@ export function searchEmbeddings(
 }
 
 /**
- * Recursive character splitter: attempts to split text at natural boundaries
- * (paragraphs, sentences, words) to keep chunks semantically coherent.
+ * Simple sliding window splitter: ensure chunks are at most maxLength
+ * and have a consistent overlap.
  */
 export function chunkText(
   text: string,
   maxLength = 512,
   overlap = 64,
 ): string[] {
-  const separators = ["\n\n", "\n", ". ", "? ", "! ", " ", ""];
+  if (!text.trim()) return [];
+  if (text.length <= maxLength) return [text.trim()];
 
-  function splitRecursive(input: string): string[] {
-    const trimmed = input.trim();
-    if (!trimmed) return [];
-    if (trimmed.length <= maxLength) return [trimmed];
+  const chunks: string[] = [];
+  let start = 0;
 
-    // Find the best separator
-    let separator = separators[separators.length - 1];
-    for (const s of separators) {
-      if (trimmed.includes(s)) {
-        separator = s;
-        break;
+  while (start < text.length) {
+    let end = start + maxLength;
+    
+    // If we're not at the very end, try to find a natural break point (space or newline)
+    if (end < text.length) {
+      const lastSpace = text.lastIndexOf(" ", end);
+      const lastNewline = text.lastIndexOf("\n", end);
+      const breakPoint = Math.max(lastSpace, lastNewline);
+      
+      // Only break if it's not too far back (don't lose more than 20% of the chunk)
+      if (breakPoint > start + maxLength * 0.8) {
+        end = breakPoint;
       }
     }
 
-    const parts = trimmed.split(separator);
-    const result: string[] = [];
-    let currentChunk = "";
+    const chunk = text.slice(start, end).trim();
+    if (chunk) chunks.push(chunk);
 
-    for (const part of parts) {
-      const partWithSeparator = currentChunk ? separator + part : part;
-      if ((currentChunk + partWithSeparator).length <= maxLength) {
-        currentChunk += partWithSeparator;
-      } else {
-        if (currentChunk) result.push(currentChunk);
-        
-        // If the part itself is too long, recurse further
-        if (part.length > maxLength) {
-          result.push(...splitRecursive(part));
-        } else {
-          currentChunk = part;
-        }
-      }
-    }
-    if (currentChunk) result.push(currentChunk);
-    return result;
+    // Slide the window: move by (chunk size - overlap)
+    // Ensure we always make progress even if overlap is large
+    const nextStart = end - overlap;
+    start = nextStart <= start ? end : nextStart;
   }
 
-  const initialChunks = splitRecursive(text);
-  
-  // Apply overlap
-  if (overlap <= 0 || initialChunks.length <= 1) return initialChunks;
-
-  const overlapped: string[] = [];
-  for (let i = 0; i < initialChunks.length; i++) {
-    let chunk = initialChunks[i];
-    if (i > 0) {
-      const prev = initialChunks[i - 1];
-      // Take the last 'overlap' characters from previous chunk
-      const overlapText = prev.slice(-overlap);
-      // Ensure we don't exceed maxLength by prepending overlap
-      // We take only as much as fits within maxLength
-      const availableSpace = maxLength - chunk.length;
-      if (availableSpace > 0) {
-        const actualOverlap = overlapText.slice(-availableSpace);
-        chunk = actualOverlap + chunk;
-      }
-    }
-    overlapped.push(chunk);
-  }
-
-  return overlapped;
+  return chunks;
 }
