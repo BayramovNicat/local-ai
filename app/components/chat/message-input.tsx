@@ -1,11 +1,11 @@
-"use client";
+'use client';
 
-import { useRef, useEffect } from "react";
-import { Send, Paperclip, X, Square } from "lucide-react";
-import { Tooltip } from "../ui/tooltip";
-import { DocumentPanel } from "./document-panel";
-import type { Attachment, Document } from "@/app/types";
-import { SUPPORTED_DOC_TYPES } from "@/app/data/constants";
+import { useRef, useEffect } from 'react';
+import { Send, Paperclip, X, Square } from 'lucide-react';
+import { Tooltip } from '../ui/tooltip';
+import { DocumentPanel } from './document-panel';
+import type { Attachment, Document } from '@/app/types';
+import { SUPPORTED_DOC_TYPES } from '@/app/data/constants';
 
 export function MessageInput({
   input,
@@ -60,12 +60,12 @@ export function MessageInput({
   return (
     <div
       className={`p-3 transition-all duration-300 ease-in-out sm:p-4 ${
-        isCentered ? "bg-transparent" : "bg-[#0a0a0a]/40 backdrop-blur-md"
+        isCentered ? 'bg-transparent' : 'bg-[#0a0a0a]/40 backdrop-blur-md'
       }`}
     >
       <div
         className={`mx-auto max-w-4xl transition-all duration-300 ease-in-out ${
-          isCentered ? "scale-[1.02]" : "scale-100"
+          isCentered ? 'scale-[1.02]' : 'scale-100'
         }`}
       >
         <div
@@ -114,7 +114,7 @@ export function MessageInput({
               onChange={(e) => {
                 if (!e.target.files) return;
                 onUpload(Array.from(e.target.files));
-                e.target.value = "";
+                e.target.value = '';
               }}
             />
             <div
@@ -125,12 +125,12 @@ export function MessageInput({
               aria-label="Message input"
               data-placeholder="Message local.ai..."
               className="max-h-50 min-h-20 flex-1 overflow-y-auto text-sm text-neutral-200 empty:before:text-neutral-500 empty:before:content-[attr(data-placeholder)] focus:outline-none [&_img]:my-1 [&_img]:max-h-75 [&_img]:max-w-full [&_img]:rounded-lg"
-              onInput={() => setInput(editorRef.current?.innerText || "")}
+              onInput={() => setInput(editorRef.current?.innerText || '')}
               onPaste={async (e) => {
                 const items = e.clipboardData?.items;
                 if (!items) return;
 
-                const hasFiles = Array.from(items).some((i) => i.kind === "file");
+                const hasFiles = Array.from(items).some((i) => i.kind === 'file');
                 if (hasFiles) {
                   e.preventDefault();
                   const files: File[] = [];
@@ -141,8 +141,8 @@ export function MessageInput({
                   if (files.length > 0) onUpload(files);
                 } else {
                   e.preventDefault();
-                  const text = e.clipboardData.getData("text/plain");
-                  document.execCommand("insertText", false, text);
+                  const text = e.clipboardData.getData('text/plain');
+                  document.execCommand('insertText', false, text);
                 }
               }}
               onDrop={async (e) => {
@@ -152,7 +152,7 @@ export function MessageInput({
               }}
               onDragOver={(e) => e.preventDefault()}
               onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
+                if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault();
                   if (!isStreaming) {
                     onSend();
@@ -177,7 +177,7 @@ export function MessageInput({
                   }}
                   disabled={!hasContent}
                   className={`shrink-0 cursor-pointer rounded-lg p-2 transition-all ${
-                    hasContent ? "text-black" : "cursor-not-allowed text-neutral-600"
+                    hasContent ? 'text-black' : 'cursor-not-allowed text-neutral-600'
                   }`}
                   style={hasContent ? { backgroundColor: accent } : undefined}
                 >

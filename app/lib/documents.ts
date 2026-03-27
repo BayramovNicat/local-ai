@@ -3,13 +3,13 @@
  */
 
 export async function extractText(file: File): Promise<string> {
-  const ext = file.name.split(".").pop()?.toLowerCase();
+  const ext = file.name.split('.').pop()?.toLowerCase();
 
   switch (ext) {
-    case "txt":
-    case "md":
+    case 'txt':
+    case 'md':
       return extractTextFromPlain(file);
-    case "pdf":
+    case 'pdf':
       return extractTextFromPdf(file);
     default:
       throw new Error(`Unsupported file type: .${ext}`);
@@ -26,11 +26,11 @@ function extractTextFromPlain(file: File): Promise<string> {
 }
 
 async function extractTextFromPdf(file: File): Promise<string> {
-  const pdfjsLib = await import("pdfjs-dist");
+  const pdfjsLib = await import('pdfjs-dist');
 
   // Use the bundled worker
   pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-    "pdfjs-dist/build/pdf.worker.min.mjs",
+    'pdfjs-dist/build/pdf.worker.min.mjs',
     import.meta.url,
   ).toString();
 
@@ -41,9 +41,9 @@ async function extractTextFromPdf(file: File): Promise<string> {
   for (let i = 1; i <= pdf.numPages; i++) {
     const page = await pdf.getPage(i);
     const textContent = await page.getTextContent();
-    const pageText = textContent.items.map((item) => ("str" in item ? item.str : "")).join(" ");
+    const pageText = textContent.items.map((item) => ('str' in item ? item.str : '')).join(' ');
     pages.push(pageText);
   }
 
-  return pages.join("\n\n");
+  return pages.join('\n\n');
 }

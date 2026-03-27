@@ -1,12 +1,12 @@
-"use client";
+'use client';
 
-import { useRef, useCallback } from "react";
-import { Menu, X, Search, Palette } from "lucide-react";
-import { Tooltip } from "../ui/tooltip";
-import type { AccentPreset } from "@/app/types";
-import { useClickOutside } from "@/app/hooks/use-click-outside";
-import { ColorPicker } from "./color-picker";
-import { ModelSelector } from "./model-selector";
+import { useRef, useCallback } from 'react';
+import { Menu, X, Search, Palette } from 'lucide-react';
+import { Tooltip } from '../ui/tooltip';
+import type { AccentPreset } from '@/app/types';
+import { useClickOutside } from '@/app/hooks/use-click-outside';
+import { ColorPicker } from './color-picker';
+import { ModelSelector } from './model-selector';
 
 export function Header({
   accent,
@@ -54,14 +54,14 @@ export function Header({
     <header className="absolute top-0 right-0 left-0 z-10 flex items-center justify-between bg-[#0a0a0a]/40 px-3 py-3 backdrop-blur-md sm:px-4">
       <div className="flex items-center gap-3">
         <Tooltip
-          content={isSidebarOpen ? "Collapse Sidebar" : "Expand Sidebar"}
+          content={isSidebarOpen ? 'Collapse Sidebar' : 'Expand Sidebar'}
           position="bottom"
           className="inline-block"
         >
           <button
             onClick={onToggleSidebar}
             className="cursor-pointer rounded-lg p-2 text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-neutral-200"
-            aria-label={isSidebarOpen ? "Collapse Sidebar" : "Expand Sidebar"}
+            aria-label={isSidebarOpen ? 'Collapse Sidebar' : 'Expand Sidebar'}
           >
             {isSidebarOpen ? <X size={18} /> : <Menu size={18} />}
           </button>

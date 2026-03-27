@@ -1,10 +1,10 @@
-import type { ChatSession, EmbeddingRecord, Document, Attachment } from "@/app/types";
-import { normalizeVector } from "./embeddings";
+import type { ChatSession, EmbeddingRecord, Document, Attachment } from '@/app/types';
+import { normalizeVector } from './embeddings';
 
-const DB_NAME = "local-ai";
-const STORE_CHATS = "chats";
-const STORE_EMBEDDINGS = "embeddings";
-const STORE_DOCUMENTS = "documents";
+const DB_NAME = 'local-ai';
+const STORE_CHATS = 'chats';
+const STORE_EMBEDDINGS = 'embeddings';
+const STORE_DOCUMENTS = 'documents';
 const DB_VERSION = 4;
 
 function openDB(): Promise<IDBDatabase> {
@@ -23,25 +23,25 @@ function openDB(): Promise<IDBDatabase> {
 
       if (!db.objectStoreNames.contains(STORE_EMBEDDINGS)) {
         const store = db.createObjectStore(STORE_EMBEDDINGS, {
-          keyPath: "id",
+          keyPath: 'id',
         });
-        store.createIndex("chatId", "chatId", { unique: false });
-        store.createIndex("messageId", "messageId", { unique: false });
-        store.createIndex("documentId", "documentId", { unique: false });
+        store.createIndex('chatId', 'chatId', { unique: false });
+        store.createIndex('messageId', 'messageId', { unique: false });
+        store.createIndex('documentId', 'documentId', { unique: false });
       } else if (oldVersion < 3) {
         // Add documentId index to existing embeddings store
         const tx = (e.target as IDBOpenDBRequest).transaction!;
         const store = tx.objectStore(STORE_EMBEDDINGS);
-        if (!store.indexNames.contains("documentId")) {
-          store.createIndex("documentId", "documentId", { unique: false });
+        if (!store.indexNames.contains('documentId')) {
+          store.createIndex('documentId', 'documentId', { unique: false });
         }
       }
 
       if (!db.objectStoreNames.contains(STORE_DOCUMENTS)) {
         const store = db.createObjectStore(STORE_DOCUMENTS, {
-          keyPath: "id",
+          keyPath: 'id',
         });
-        store.createIndex("chatId", "chatId", { unique: false });
+        store.createIndex('chatId', 'chatId', { unique: false });
       }
     };
     request.onsuccess = (e) => resolve((e.target as IDBOpenDBRequest).result);
@@ -55,7 +55,7 @@ function openDB(): Promise<IDBDatabase> {
 export function isQuotaExceededError(err: unknown): boolean {
   return (
     err instanceof DOMException &&
-    (err.name === "QuotaExceededError" || err.name === "NS_ERROR_DOM_QUOTA_REACHED")
+    (err.name === 'QuotaExceededError' || err.name === 'NS_ERROR_DOM_QUOTA_REACHED')
   );
 }
 
@@ -79,14 +79,14 @@ export async function getStorageUsage(): Promise<{ usage: number; quota: number 
  * ObjectURLs are transient and should not be persisted.
  * We store the Blob instead and recreate the URL on load.
  */
-function prepareChatForSave(chat: Omit<ChatSession, "id">): Omit<ChatSession, "id"> {
+function prepareChatForSave(chat: Omit<ChatSession, 'id'>): Omit<ChatSession, 'id'> {
   return {
     ...chat,
     messages: chat.messages.map((msg) => ({
       ...msg,
       attachments: msg.attachments?.map((att) => ({
         ...att,
-        url: "", // Don't persist transient blob: URLs
+        url: '', // Don't persist transient blob: URLs
       })),
     })),
   };
@@ -101,11 +101,11 @@ export function restoreChatFromSave(chat: ChatSession, oldChat?: ChatSession): C
         ...msg,
         attachments: msg.attachments?.map((att) => {
           // If already has blob URL, keep it
-          if (att.url.startsWith("blob:")) return att;
+          if (att.url.startsWith('blob:')) return att;
 
           const oldAtt = oldMsg?.attachments?.find((a) => a.id === att.id);
           // If we already have a valid Blob URL for this attachment in old state, REUSE it!
-          if (oldAtt && oldAtt.url.startsWith("blob:")) {
+          if (oldAtt && oldAtt.url.startsWith('blob:')) {
             return { ...att, url: oldAtt.url };
           }
           // Only create if we have a blob and no URL
@@ -119,11 +119,11 @@ export function restoreChatFromSave(chat: ChatSession, oldChat?: ChatSession): C
   };
 }
 
-export async function saveChat(id: string, data: Omit<ChatSession, "id">): Promise<void> {
+export async function saveChat(id: string, data: Omit<ChatSession, 'id'>): Promise<void> {
   const db = await openDB();
   const preparedData = prepareChatForSave(data);
   return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE_CHATS, "readwrite");
+    const tx = db.transaction(STORE_CHATS, 'readwrite');
     const req = tx.objectStore(STORE_CHATS).put(preparedData, id);
     req.onsuccess = () => resolve();
     req.onerror = () => reject(req.error);
@@ -133,13 +133,13 @@ export async function saveChat(id: string, data: Omit<ChatSession, "id">): Promi
 export async function loadAllChats(restoreUrls = false): Promise<ChatSession[]> {
   const db = await openDB();
   return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE_CHATS, "readonly");
+    const tx = db.transaction(STORE_CHATS, 'readonly');
     const store = tx.objectStore(STORE_CHATS);
     const keysReq = store.getAllKeys();
     const valsReq = store.getAll();
     tx.oncomplete = () => {
       const keys = keysReq.result as string[];
-      const vals = valsReq.result as Omit<ChatSession, "id">[];
+      const vals = valsReq.result as Omit<ChatSession, 'id'>[];
       const chats = keys.map((id, i) => ({ id, ...vals[i] }));
       resolve(restoreUrls ? chats.map((c) => restoreChatFromSave(c)) : (chats as ChatSession[]));
     };
@@ -152,7 +152,7 @@ export async function loadAllChats(restoreUrls = false): Promise<ChatSession[]> 
  */
 export function revokeAttachmentUrls(attachments: Attachment[]) {
   for (const att of attachments) {
-    if (att.url.startsWith("blob:")) {
+    if (att.url.startsWith('blob:')) {
       URL.revokeObjectURL(att.url);
     }
   }
@@ -166,7 +166,7 @@ export function revokeChatUrls(chats: ChatSession[]) {
     for (const msg of chat.messages) {
       if (msg.attachments) {
         for (const att of msg.attachments) {
-          if (att.url.startsWith("blob:")) {
+          if (att.url.startsWith('blob:')) {
             URL.revokeObjectURL(att.url);
           }
         }
@@ -178,7 +178,7 @@ export function revokeChatUrls(chats: ChatSession[]) {
 export async function deleteChat(id: string): Promise<void> {
   const db = await openDB();
   return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE_CHATS, "readwrite");
+    const tx = db.transaction(STORE_CHATS, 'readwrite');
     const req = tx.objectStore(STORE_CHATS).delete(id);
     req.onsuccess = () => resolve();
     req.onerror = () => reject(req.error);
@@ -207,7 +207,7 @@ export async function saveEmbeddings(records: EmbeddingRecord[]): Promise<void> 
   }));
 
   return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE_EMBEDDINGS, "readwrite");
+    const tx = db.transaction(STORE_EMBEDDINGS, 'readwrite');
     const store = tx.objectStore(STORE_EMBEDDINGS);
     for (const rec of normalizedRecords) {
       store.put(rec);
@@ -234,7 +234,7 @@ export async function loadAllEmbeddings(): Promise<EmbeddingRecord[]> {
   if (_embeddingsCache) return Array.from(_embeddingsCache.values());
   const db = await openDB();
   return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE_EMBEDDINGS, "readonly");
+    const tx = db.transaction(STORE_EMBEDDINGS, 'readonly');
     const req = tx.objectStore(STORE_EMBEDDINGS).getAll();
     req.onsuccess = () => {
       const records: EmbeddingRecord[] = req.result ?? [];
@@ -248,9 +248,9 @@ export async function loadAllEmbeddings(): Promise<EmbeddingRecord[]> {
 export async function deleteEmbeddingsByChatId(chatId: string): Promise<void> {
   const db = await openDB();
   return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE_EMBEDDINGS, "readwrite");
+    const tx = db.transaction(STORE_EMBEDDINGS, 'readwrite');
     const store = tx.objectStore(STORE_EMBEDDINGS);
-    const index = store.index("chatId");
+    const index = store.index('chatId');
     const req = index.openCursor(IDBKeyRange.only(chatId));
     req.onsuccess = (e) => {
       const cursor = (e.target as IDBRequest<IDBCursorWithValue | null>).result;
@@ -270,9 +270,9 @@ export async function deleteEmbeddingsByChatId(chatId: string): Promise<void> {
 export async function deleteEmbeddingsByDocumentId(documentId: string): Promise<void> {
   const db = await openDB();
   return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE_EMBEDDINGS, "readwrite");
+    const tx = db.transaction(STORE_EMBEDDINGS, 'readwrite');
     const store = tx.objectStore(STORE_EMBEDDINGS);
-    const index = store.index("documentId");
+    const index = store.index('documentId');
     const req = index.openCursor(IDBKeyRange.only(documentId));
     req.onsuccess = (e) => {
       const cursor = (e.target as IDBRequest<IDBCursorWithValue | null>).result;
@@ -296,8 +296,8 @@ export async function deleteEmbeddingsByDocumentId(documentId: string): Promise<
 export async function loadDocEmbeddingsByChatId(chatId: string): Promise<EmbeddingRecord[]> {
   const db = await openDB();
   return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE_EMBEDDINGS, "readonly");
-    const index = tx.objectStore(STORE_EMBEDDINGS).index("chatId");
+    const tx = db.transaction(STORE_EMBEDDINGS, 'readonly');
+    const index = tx.objectStore(STORE_EMBEDDINGS).index('chatId');
     const req = index.getAll(IDBKeyRange.only(chatId));
     req.onsuccess = () => {
       resolve((req.result ?? []).filter((r: EmbeddingRecord) => r.documentId));
@@ -316,8 +316,8 @@ export async function loadConvEmbeddingsExcludingChat(
 ): Promise<EmbeddingRecord[]> {
   const db = await openDB();
   return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE_EMBEDDINGS, "readonly");
-    const index = tx.objectStore(STORE_EMBEDDINGS).index("chatId");
+    const tx = db.transaction(STORE_EMBEDDINGS, 'readonly');
+    const index = tx.objectStore(STORE_EMBEDDINGS).index('chatId');
 
     // Two ranges: everything before and after the excluded chatId
     const ranges = [
@@ -348,8 +348,8 @@ export async function getEmbeddedMessageIds(): Promise<Set<string>> {
 
   const db = await openDB();
   return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE_EMBEDDINGS, "readonly");
-    const index = tx.objectStore(STORE_EMBEDDINGS).index("messageId");
+    const tx = db.transaction(STORE_EMBEDDINGS, 'readonly');
+    const index = tx.objectStore(STORE_EMBEDDINGS).index('messageId');
     const results = new Set<string>();
 
     // openKeyCursor only retrieves keys, much faster than loading full objects (vectors)
@@ -375,7 +375,7 @@ export async function getEmbeddedMessageIds(): Promise<Set<string>> {
 export async function saveDocument(doc: Document): Promise<void> {
   const db = await openDB();
   return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE_DOCUMENTS, "readwrite");
+    const tx = db.transaction(STORE_DOCUMENTS, 'readwrite');
     const req = tx.objectStore(STORE_DOCUMENTS).put(doc);
     req.onsuccess = () => resolve();
     req.onerror = () => reject(req.error);
@@ -385,9 +385,9 @@ export async function saveDocument(doc: Document): Promise<void> {
 export async function getDocumentsByChatId(chatId: string): Promise<Document[]> {
   const db = await openDB();
   return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE_DOCUMENTS, "readonly");
+    const tx = db.transaction(STORE_DOCUMENTS, 'readonly');
     const store = tx.objectStore(STORE_DOCUMENTS);
-    const index = store.index("chatId");
+    const index = store.index('chatId');
     const req = index.getAll(IDBKeyRange.only(chatId));
     req.onsuccess = () => resolve(req.result ?? []);
     req.onerror = () => reject(req.error);
@@ -397,7 +397,7 @@ export async function getDocumentsByChatId(chatId: string): Promise<Document[]> 
 export async function deleteDocument(id: string): Promise<void> {
   const db = await openDB();
   return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE_DOCUMENTS, "readwrite");
+    const tx = db.transaction(STORE_DOCUMENTS, 'readwrite');
     const req = tx.objectStore(STORE_DOCUMENTS).delete(id);
     req.onsuccess = () => resolve();
     req.onerror = () => reject(req.error);
@@ -407,9 +407,9 @@ export async function deleteDocument(id: string): Promise<void> {
 export async function deleteDocumentsByChatId(chatId: string): Promise<void> {
   const db = await openDB();
   return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE_DOCUMENTS, "readwrite");
+    const tx = db.transaction(STORE_DOCUMENTS, 'readwrite');
     const store = tx.objectStore(STORE_DOCUMENTS);
-    const index = store.index("chatId");
+    const index = store.index('chatId');
     const req = index.openCursor(IDBKeyRange.only(chatId));
     req.onsuccess = (e) => {
       const cursor = (e.target as IDBRequest<IDBCursorWithValue | null>).result;

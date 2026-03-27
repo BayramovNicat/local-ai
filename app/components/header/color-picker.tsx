@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import type { AccentPreset } from "@/app/types";
+import type { AccentPreset } from '@/app/types';
 
 export function ColorPicker({
   isOpen,
@@ -25,7 +25,7 @@ export function ColorPicker({
                 className="h-8 w-8 cursor-pointer rounded-lg border-2 transition-transform hover:scale-110"
                 style={{
                   backgroundColor: preset.hex,
-                  borderColor: accent === preset.hex ? "#ffffff" : "transparent",
+                  borderColor: accent === preset.hex ? '#ffffff' : 'transparent',
                 }}
                 title={preset.name}
                 aria-label={`Select ${preset.name} color`}

@@ -1,36 +1,36 @@
-import type { Metadata, Viewport } from "next";
-import { Plus_Jakarta_Sans, Fira_Code } from "next/font/google";
-import "./globals.css";
-import { ToastProvider } from "./components/ui/toast";
+import type { Metadata, Viewport } from 'next';
+import { Plus_Jakarta_Sans, Fira_Code } from 'next/font/google';
+import './globals.css';
+import { ToastProvider } from './components/ui/toast';
 
 const plusJakarta = Plus_Jakarta_Sans({
-  variable: "--font-sans",
-  subsets: ["latin"],
+  variable: '--font-sans',
+  subsets: ['latin'],
 });
 
 const firaCode = Fira_Code({
-  variable: "--font-mono",
-  subsets: ["latin"],
+  variable: '--font-mono',
+  subsets: ['latin'],
 });
 
 export const metadata: Metadata = {
-  title: "local.ai | Private, Local-First AI Assistant",
+  title: 'local.ai | Private, Local-First AI Assistant',
   description:
-    "Fast, private, and secure AI chat that runs entirely in your browser using WebGPU. No data leaves your device.",
-  keywords: ["local ai", "browser ai", "private assistant", "webgpu", "llama", "qwen", "phi-3"],
-  authors: [{ name: "local.ai" }],
+    'Fast, private, and secure AI chat that runs entirely in your browser using WebGPU. No data leaves your device.',
+  keywords: ['local ai', 'browser ai', 'private assistant', 'webgpu', 'llama', 'qwen', 'phi-3'],
+  authors: [{ name: 'local.ai' }],
   openGraph: {
-    title: "local.ai | Private, Local-First AI Assistant",
+    title: 'local.ai | Private, Local-First AI Assistant',
     description:
-      "Fast, private, and secure AI chat that runs entirely in your browser using WebGPU.",
-    type: "website",
-    siteName: "local.ai",
+      'Fast, private, and secure AI chat that runs entirely in your browser using WebGPU.',
+    type: 'website',
+    siteName: 'local.ai',
   },
   twitter: {
-    card: "summary_large_image",
-    title: "local.ai | Private, Local-First AI Assistant",
+    card: 'summary_large_image',
+    title: 'local.ai | Private, Local-First AI Assistant',
     description:
-      "Fast, private, and secure AI chat that runs entirely in your browser using WebGPU.",
+      'Fast, private, and secure AI chat that runs entirely in your browser using WebGPU.',
   },
   robots: {
     index: true,
@@ -39,8 +39,8 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0a0a0a",
-  width: "device-width",
+  themeColor: '#0a0a0a',
+  width: 'device-width',
   initialScale: 1,
 };
 

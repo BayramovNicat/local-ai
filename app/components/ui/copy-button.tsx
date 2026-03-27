@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { Copy, Check } from "lucide-react";
+import { useState } from 'react';
+import { Copy, Check } from 'lucide-react';
 
 export function CopyButton({ text, size = 13 }: { text: string; size?: number }) {
   const [copied, setCopied] = useState(false);
@@ -13,7 +13,7 @@ export function CopyButton({ text, size = 13 }: { text: string; size?: number })
         setTimeout(() => setCopied(false), 1500);
       },
       () => {
-        console.error("[Copy] Clipboard access denied");
+        console.error('[Copy] Clipboard access denied');
       },
     );
   }

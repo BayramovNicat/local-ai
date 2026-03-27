@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { useCallback, useSyncExternalStore } from "react";
-import { AVAILABLE_MODELS, ACCENT_PRESETS } from "@/app/data/constants";
+import { useCallback, useSyncExternalStore } from 'react';
+import { AVAILABLE_MODELS, ACCENT_PRESETS } from '@/app/data/constants';
 
 function makeLocalStorageStore(key: string, fallback: string) {
   const listeners = new Set<() => void>();
@@ -27,9 +27,9 @@ function makeLocalStorageStore(key: string, fallback: string) {
   return { subscribe, getSnapshot, getServerSnapshot, set };
 }
 
-const modelStore = makeLocalStorageStore("selectedModel", AVAILABLE_MODELS[0]);
-const accentStore = makeLocalStorageStore("accentColor", ACCENT_PRESETS[0].hex);
-const sidebarStore = makeLocalStorageStore("isSidebarOpen", "false");
+const modelStore = makeLocalStorageStore('selectedModel', AVAILABLE_MODELS[0]);
+const accentStore = makeLocalStorageStore('accentColor', ACCENT_PRESETS[0].hex);
+const sidebarStore = makeLocalStorageStore('isSidebarOpen', 'false');
 
 export function usePreferences() {
   const selectedModel = useSyncExternalStore(
@@ -50,12 +50,12 @@ export function usePreferences() {
     sidebarStore.getServerSnapshot,
   );
 
-  const isSidebarOpen = isSidebarOpenRaw === "true";
+  const isSidebarOpen = isSidebarOpenRaw === 'true';
 
   const setSelectedModel = useCallback((v: string) => modelStore.set(v), []);
   const setAccentColor = useCallback((v: string) => accentStore.set(v), []);
   const setIsSidebarOpen = useCallback((v: boolean | ((prev: boolean) => boolean)) => {
-    const next = typeof v === "function" ? v(sidebarStore.getSnapshot() === "true") : v;
+    const next = typeof v === 'function' ? v(sidebarStore.getSnapshot() === 'true') : v;
     sidebarStore.set(String(next));
   }, []);
 

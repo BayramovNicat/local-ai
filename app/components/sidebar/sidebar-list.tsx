@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
-import { useState, useEffect, useRef } from "react";
-import { MessageSquare, Trash2 } from "lucide-react";
-import { Tooltip } from "@/app/components/ui/tooltip";
-import type { ChatSession } from "@/app/types";
+import { useState, useEffect, useRef } from 'react';
+import { MessageSquare, Trash2 } from 'lucide-react';
+import { Tooltip } from '@/app/components/ui/tooltip';
+import type { ChatSession } from '@/app/types';
 import {
   INITIAL_VISIBLE_CHATS,
   LOAD_MORE_CHATS_INCREMENT,
   SCROLL_THRESHOLD_BOTTOM,
-} from "@/app/data/constants";
+} from '@/app/data/constants';
 
 interface SidebarListProps {
   history: ChatSession[];
@@ -48,8 +48,8 @@ export function SidebarList({
       }
     };
 
-    container.addEventListener("scroll", handleScroll, { passive: true });
-    return () => container.removeEventListener("scroll", handleScroll);
+    container.addEventListener('scroll', handleScroll, { passive: true });
+    return () => container.removeEventListener('scroll', handleScroll);
   }, [history.length, visibleCount, scrollContainerRef]);
 
   const visibleHistory = history.slice(0, visibleCount);
@@ -61,16 +61,16 @@ export function SidebarList({
           key={session.id}
           className={`group flex min-w-0 cursor-pointer items-center gap-2 rounded-lg border px-3 py-2.5 text-sm transition-colors ${
             activeChatId === session.id
-              ? ""
-              : "border-transparent text-neutral-400 hover:bg-neutral-900 hover:text-neutral-200"
+              ? ''
+              : 'border-transparent text-neutral-400 hover:bg-neutral-900 hover:text-neutral-200'
           }`}
           style={{
-            contentVisibility: "auto",
-            containIntrinsicSize: "auto 40px",
+            contentVisibility: 'auto',
+            containIntrinsicSize: 'auto 40px',
             ...(activeChatId === session.id
               ? {
-                  borderColor: "color-mix(in srgb, var(--accent) 30%, transparent)",
-                  color: "#ffffff",
+                  borderColor: 'color-mix(in srgb, var(--accent) 30%, transparent)',
+                  color: '#ffffff',
                 }
               : {}),
           }}

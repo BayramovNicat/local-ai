@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { Bot } from "lucide-react";
+import { Bot } from 'lucide-react';
 
 export function EmptyState({ accent }: { accent: string }) {
   return (

@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useState, useRef, useEffect, useCallback } from "react";
-import { Search, X, MessageSquare, User, Bot, FileText, Loader2 } from "lucide-react";
-import type { SearchResult } from "@/app/types";
-import { SEARCH_DEBOUNCE_MS } from "@/app/data/constants";
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { Search, X, MessageSquare, User, Bot, FileText, Loader2 } from 'lucide-react';
+import type { SearchResult } from '@/app/types';
+import { SEARCH_DEBOUNCE_MS } from '@/app/data/constants';
 
 export function SearchModal({
   isOpen,
@@ -24,7 +24,7 @@ export function SearchModal({
   onSelectResult: (chatId: string) => void;
   onClose: () => void;
 }) {
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
   const [hasSearched, setHasSearched] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
@@ -44,23 +44,23 @@ export function SearchModal({
   useEffect(() => {
     if (!isOpen) return;
     const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === 'Escape') onClose();
       if (results.length === 0) return;
 
-      if (e.key === "ArrowDown") {
+      if (e.key === 'ArrowDown') {
         e.preventDefault();
         setSelectedIndex((prev) => (prev < results.length - 1 ? prev + 1 : 0));
-      } else if (e.key === "ArrowUp") {
+      } else if (e.key === 'ArrowUp') {
         e.preventDefault();
         setSelectedIndex((prev) => (prev > 0 ? prev - 1 : results.length - 1));
-      } else if (e.key === "Enter" && selectedIndex >= 0 && results[selectedIndex]) {
+      } else if (e.key === 'Enter' && selectedIndex >= 0 && results[selectedIndex]) {
         e.preventDefault();
         onSelectResult(results[selectedIndex].chatId);
         onClose();
       }
     };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
   }, [isOpen, onClose, results, selectedIndex, onSelectResult]);
 
   // Scroll selected item into view
@@ -76,11 +76,11 @@ export function SearchModal({
         const containerBottom = containerTop + container.offsetHeight;
 
         if (itemTop < containerTop) {
-          container.scrollTo({ top: itemTop - 8, behavior: "smooth" });
+          container.scrollTo({ top: itemTop - 8, behavior: 'smooth' });
         } else if (itemBottom > containerBottom) {
           container.scrollTo({
             top: itemBottom - container.offsetHeight + 8,
-            behavior: "smooth",
+            behavior: 'smooth',
           });
         }
       }
@@ -112,7 +112,7 @@ export function SearchModal({
             setHasSearched(true);
           }
         } catch (err) {
-          console.error("Search error:", err);
+          console.error('Search error:', err);
         }
       }, SEARCH_DEBOUNCE_MS);
     },
@@ -156,7 +156,7 @@ export function SearchModal({
         {(isIndexing || !isEmbeddingReady) && (
           <div className="flex items-center gap-2 border-b border-neutral-800 px-5 py-2.5 text-xs text-neutral-500">
             <Loader2 size={12} className="spinner" style={{ color: accent }} />
-            <span>{!isEmbeddingReady ? "Loading embedding model..." : "Indexing messages..."}</span>
+            <span>{!isEmbeddingReady ? 'Loading embedding model...' : 'Indexing messages...'}</span>
           </div>
         )}
 
@@ -187,7 +187,7 @@ export function SearchModal({
             <button
               key={`${result.messageId}-${idx}`}
               className={`mb-1 w-full cursor-pointer rounded-xl border border-transparent px-4 py-3 text-left transition-all ${
-                selectedIndex === idx ? "border-white/5 bg-white/5" : "hover:bg-white/3"
+                selectedIndex === idx ? 'border-white/5 bg-white/5' : 'hover:bg-white/3'
               }`}
               onClick={() => {
                 onSelectResult(result.chatId);
@@ -201,9 +201,9 @@ export function SearchModal({
                   {result.chatTitle}
                 </span>
                 <div className="flex items-center gap-2 text-neutral-500">
-                  {result.role === "document" ? (
+                  {result.role === 'document' ? (
                     <FileText size={11} />
-                  ) : result.role === "user" ? (
+                  ) : result.role === 'user' ? (
                     <User size={11} />
                   ) : (
                     <Bot size={11} />
@@ -221,7 +221,7 @@ export function SearchModal({
               </div>
               <p
                 className={`line-clamp-3 text-xs leading-relaxed transition-colors ${
-                  selectedIndex === idx ? "text-neutral-200" : "text-neutral-400"
+                  selectedIndex === idx ? 'text-neutral-200' : 'text-neutral-400'
                 }`}
               >
                 {result.text}

@@ -1,21 +1,21 @@
-"use client";
+'use client';
 
-import { useState, useEffect, useCallback, useRef } from "react";
-import { ACCENT_PRESETS, AVAILABLE_MODELS } from "@/app/data/constants";
-import { useEngine } from "@/app/hooks/use-engine";
-import { usePreferences } from "@/app/hooks/use-preferences";
-import { useChat } from "@/app/hooks/use-chat";
-import { useEmbeddings } from "@/app/hooks/use-embeddings";
-import { useRag } from "@/app/hooks/use-rag";
-import { Sidebar } from "@/app/components/sidebar/sidebar";
-import { Header } from "@/app/components/header/header";
-import { MessageList } from "@/app/components/chat/message-list";
-import { EmptyState } from "@/app/components/chat/empty-state";
-import { MessageInput } from "@/app/components/chat/message-input";
-import { LoadingBanner } from "@/app/components/chat/loading-banner";
-import { SearchModal } from "@/app/components/search/search-modal";
-import { processFiles } from "@/app/hooks/use-file-handler";
-import { SUPPORTED_DOC_TYPES } from "@/app/data/constants";
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { ACCENT_PRESETS, AVAILABLE_MODELS } from '@/app/data/constants';
+import { useEngine } from '@/app/hooks/use-engine';
+import { usePreferences } from '@/app/hooks/use-preferences';
+import { useChat } from '@/app/hooks/use-chat';
+import { useEmbeddings } from '@/app/hooks/use-embeddings';
+import { useRag } from '@/app/hooks/use-rag';
+import { Sidebar } from '@/app/components/sidebar/sidebar';
+import { Header } from '@/app/components/header/header';
+import { MessageList } from '@/app/components/chat/message-list';
+import { EmptyState } from '@/app/components/chat/empty-state';
+import { MessageInput } from '@/app/components/chat/message-input';
+import { LoadingBanner } from '@/app/components/chat/loading-banner';
+import { SearchModal } from '@/app/components/search/search-modal';
+import { processFiles } from '@/app/hooks/use-file-handler';
+import { SUPPORTED_DOC_TYPES } from '@/app/data/constants';
 
 export default function Home() {
   const {
@@ -102,11 +102,11 @@ export default function Home() {
 
   // Load documents when active chat changes
   useEffect(() => {
-    loadDocuments(activeChatId || "");
+    loadDocuments(activeChatId || '');
   }, [activeChatId, loadDocuments]);
 
   // Auto-embed messages after streaming completes
-  const lastEmbedRef = useRef({ chatId: "", count: 0 });
+  const lastEmbedRef = useRef({ chatId: '', count: 0 });
   useEffect(() => {
     if (!isStreaming && messages.length > 0 && activeChatId) {
       const last = lastEmbedRef.current;
@@ -125,12 +125,12 @@ export default function Home() {
 
       if (isMod && isShift) {
         switch (key) {
-          case "k":
+          case 'k':
             e.preventDefault();
             initEmbeddingEngine();
             setIsSearchOpen((prev) => !prev);
             break;
-          case "o":
+          case 'o':
             e.preventDefault();
             newChat();
             break;
@@ -138,8 +138,8 @@ export default function Home() {
       }
     };
 
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
   }, [newChat, initEmbeddingEngine]);
 
   const handleDeleteChat = useCallback(
@@ -171,11 +171,11 @@ export default function Home() {
       const imageFiles: File[] = [];
       const docFiles: File[] = [];
 
-      const docExts = SUPPORTED_DOC_TYPES.split(",").map((ext) => ext.trim().toLowerCase());
+      const docExts = SUPPORTED_DOC_TYPES.split(',').map((ext) => ext.trim().toLowerCase());
 
       for (const file of files) {
-        const ext = `.${file.name.split(".").pop()?.toLowerCase()}`;
-        if (file.type.startsWith("image/")) {
+        const ext = `.${file.name.split('.').pop()?.toLowerCase()}`;
+        if (file.type.startsWith('image/')) {
           imageFiles.push(file);
         } else if (docExts.includes(ext)) {
           docFiles.push(file);
@@ -206,7 +206,7 @@ export default function Home() {
   return (
     <div
       className="flex h-screen overflow-hidden bg-[#0a0a0a]"
-      style={{ "--accent": accentColor } as React.CSSProperties}
+      style={{ '--accent': accentColor } as React.CSSProperties}
     >
       <Sidebar
         isOpen={isSidebarOpen}
@@ -242,10 +242,10 @@ export default function Home() {
 
         <main
           ref={scrollContainerRef as React.RefObject<HTMLElement>}
-          className={`absolute inset-0 overflow-y-auto pt-16 pb-28 ${messages.length === 0 ? "flex items-center justify-center" : ""}`}
+          className={`absolute inset-0 overflow-y-auto pt-16 pb-28 ${messages.length === 0 ? 'flex items-center justify-center' : ''}`}
         >
           <div
-            className={`mx-auto max-w-4xl px-4 sm:px-6 md:px-8 ${messages.length === 0 ? "" : "space-y-6"}`}
+            className={`mx-auto max-w-4xl px-4 sm:px-6 md:px-8 ${messages.length === 0 ? '' : 'space-y-6'}`}
             role="log"
             aria-live="polite"
             aria-relevant="additions text"
@@ -268,14 +268,14 @@ export default function Home() {
             ) : (
               <>
                 <MessageList
-                  key={activeChatId || "new"}
+                  key={activeChatId || 'new'}
                   messages={messages}
                   onEdit={editMessage}
                   scrollContainerRef={scrollContainerRef}
                 />
                 {isStreaming &&
                   messages.length > 0 &&
-                  messages[messages.length - 1].role === "assistant" &&
+                  messages[messages.length - 1].role === 'assistant' &&
                   !messages[messages.length - 1].content && (
                     <div className="animate-in fade-in flex justify-start duration-300">
                       <div className="flex items-center gap-2 rounded-2xl bg-neutral-900/50 px-4 py-3 text-xs text-neutral-400 italic">
@@ -296,8 +296,8 @@ export default function Home() {
         <div
           className={`absolute right-0 left-0 z-20 ${
             messages.length > 0
-              ? `${isFirstMsg ? "transition-all duration-300 ease-in-out" : ""} bottom-0`
-              : "top-1/2 translate-y-24"
+              ? `${isFirstMsg ? 'transition-all duration-300 ease-in-out' : ''} bottom-0`
+              : 'top-1/2 translate-y-24'
           } pointer-events-auto`}
         >
           <MessageInput
@@ -319,7 +319,7 @@ export default function Home() {
         </div>
       </div>
       <SearchModal
-        key={isSearchOpen ? "open" : "closed"}
+        key={isSearchOpen ? 'open' : 'closed'}
         isOpen={isSearchOpen}
         accent={accentColor}
         isSearching={isSearching}
@@ -328,7 +328,7 @@ export default function Home() {
         onSearch={handleSearch}
         onSelectResult={handleSearchSelect}
         onClose={() => setIsSearchOpen(false)}
-      />{" "}
+      />{' '}
     </div>
   );
 }

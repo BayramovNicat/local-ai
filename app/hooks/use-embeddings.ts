@@ -1,17 +1,17 @@
-"use client";
+'use client';
 
-import { useState, useRef, useCallback, useEffect } from "react";
-import { useToast } from "@/app/components/ui/toast";
-import type { MLCEngineInterface } from "@mlc-ai/web-llm";
-import type { ChatSession, Message, EmbeddingRecord, SearchResult } from "@/app/types";
-import { EMBEDDING_MODEL, EMBEDDING_BATCH_SIZE } from "@/app/data/constants";
+import { useState, useRef, useCallback, useEffect } from 'react';
+import { useToast } from '@/app/components/ui/toast';
+import type { MLCEngineInterface } from '@mlc-ai/web-llm';
+import type { ChatSession, Message, EmbeddingRecord, SearchResult } from '@/app/types';
+import { EMBEDDING_MODEL, EMBEDDING_BATCH_SIZE } from '@/app/data/constants';
 import {
   saveEmbeddings,
   deleteEmbeddingsByChatId,
   getEmbeddedMessageIds,
   isQuotaExceededError,
-} from "@/app/lib/db";
-import { chunkText } from "@/app/lib/embeddings";
+} from '@/app/lib/db';
+import { chunkText } from '@/app/lib/embeddings';
 
 export function useEmbeddings() {
   const { error: errorToast } = useToast();
@@ -27,10 +27,10 @@ export function useEmbeddings() {
     if (embeddingPromiseRef.current) return embeddingPromiseRef.current;
 
     const promise = (async () => {
-      const webllm = await import("@mlc-ai/web-llm");
+      const webllm = await import('@mlc-ai/web-llm');
 
-      const worker = new Worker(new URL("../workers/embedding-engine.ts", import.meta.url), {
-        type: "module",
+      const worker = new Worker(new URL('../workers/embedding-engine.ts', import.meta.url), {
+        type: 'module',
       });
       workerRef.current = worker;
 
@@ -49,8 +49,8 @@ export function useEmbeddings() {
     embeddingPromiseRef.current = promise;
 
     promise.catch((err) => {
-      console.error("[Embedding] Failed to load embedding model:", err);
-      errorToast("Failed to load embedding model.");
+      console.error('[Embedding] Failed to load embedding model:', err);
+      errorToast('Failed to load embedding model.');
       embeddingPromiseRef.current = null;
     });
 
@@ -58,27 +58,27 @@ export function useEmbeddings() {
   }, [errorToast]);
 
   const callWorker = useCallback(async (type: string, payload: unknown): Promise<unknown> => {
-    if (!workerRef.current) throw new Error("Worker not initialized");
+    if (!workerRef.current) throw new Error('Worker not initialized');
     const id = crypto.randomUUID();
 
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
-        workerRef.current?.removeEventListener("message", handler);
+        workerRef.current?.removeEventListener('message', handler);
         reject(new Error(`Worker call timeout: ${type}`));
       }, 30000); // 30s timeout
 
       const handler = (e: MessageEvent) => {
         if (e.data.id === id) {
           clearTimeout(timeout);
-          workerRef.current?.removeEventListener("message", handler);
-          if (e.data.type.endsWith("-error")) {
+          workerRef.current?.removeEventListener('message', handler);
+          if (e.data.type.endsWith('-error')) {
             reject(new Error(e.data.payload));
           } else {
             resolve(e.data.payload);
           }
         }
       };
-      workerRef.current?.addEventListener("message", handler);
+      workerRef.current?.addEventListener('message', handler);
       workerRef.current?.postMessage({ type, payload, id });
     });
   }, []);
@@ -117,9 +117,9 @@ export function useEmbeddings() {
       await saveEmbeddings(records);
       if (workerRef.current) {
         try {
-          await callWorker("invalidate-cache", {});
+          await callWorker('invalidate-cache', {});
         } catch (e) {
-          console.warn("[Embedding] Failed to invalidate cache in worker:", e);
+          console.warn('[Embedding] Failed to invalidate cache in worker:', e);
         }
       }
     },
@@ -180,11 +180,11 @@ export function useEmbeddings() {
 
         await saveEmbeddingsWithSync(records);
       } catch (err) {
-        console.error("[Embedding] Failed to embed messages:", err);
+        console.error('[Embedding] Failed to embed messages:', err);
         if (isQuotaExceededError(err)) {
-          errorToast("Storage quota exceeded. Please delete some chats.");
+          errorToast('Storage quota exceeded. Please delete some chats.');
         } else {
-          errorToast("Failed to index messages for search.");
+          errorToast('Failed to index messages for search.');
         }
       } finally {
         setIsIndexing(false);
@@ -213,15 +213,15 @@ export function useEmbeddings() {
 
         // Perform search in worker with lightweight metadata
         const historyMetadata = Object.fromEntries(history.map((s) => [s.id, s.title]));
-        return (await callWorker("custom-search", {
+        return (await callWorker('custom-search', {
           queryVector,
           historyMetadata,
           query,
           topK: 10,
         })) as SearchResult[];
       } catch (err) {
-        console.error("[Embedding] Search failed:", err);
-        errorToast("Search failed. Please try again.");
+        console.error('[Embedding] Search failed:', err);
+        errorToast('Search failed. Please try again.');
         return [];
       } finally {
         setIsSearching(false);
@@ -237,7 +237,7 @@ export function useEmbeddings() {
     try {
       await deleteEmbeddingsByChatId(chatId);
     } catch (err) {
-      console.error("[Embedding] Failed to cleanup embeddings:", err);
+      console.error('[Embedding] Failed to cleanup embeddings:', err);
     }
   }, []);
 

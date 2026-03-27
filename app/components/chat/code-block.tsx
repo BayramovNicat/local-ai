@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { Copy, Check } from "lucide-react";
+import { useState } from 'react';
+import { Copy, Check } from 'lucide-react';
 
-export function CodeBlock({ children, ...props }: React.ComponentProps<"pre">) {
+export function CodeBlock({ children, ...props }: React.ComponentProps<'pre'>) {
   const [copied, setCopied] = useState(false);
 
   function handleCopy() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const code = (children as any)?.props?.children || "";
+    const code = (children as any)?.props?.children || '';
     navigator.clipboard.writeText(String(code).trim());
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);

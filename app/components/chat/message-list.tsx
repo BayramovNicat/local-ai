@@ -1,13 +1,13 @@
-"use client";
+'use client';
 
-import { useState, useEffect, useRef } from "react";
-import { ChatMessage } from "./chat-message";
-import type { Message } from "@/app/types";
+import { useState, useEffect, useRef } from 'react';
+import { ChatMessage } from './chat-message';
+import type { Message } from '@/app/types';
 import {
   INITIAL_VISIBLE_MESSAGES,
   LOAD_MORE_MESSAGES_INCREMENT,
   SCROLL_THRESHOLD_TOP,
-} from "@/app/data/constants";
+} from '@/app/data/constants';
 
 interface MessageListProps {
   messages: Message[];
@@ -56,8 +56,8 @@ export function MessageList({ messages, onEdit, scrollContainerRef }: MessageLis
       }
     };
 
-    container.addEventListener("scroll", handleScroll, { passive: true });
-    return () => container.removeEventListener("scroll", handleScroll);
+    container.addEventListener('scroll', handleScroll, { passive: true });
+    return () => container.removeEventListener('scroll', handleScroll);
   }, [messages.length, visibleCount, scrollContainerRef]);
 
   // Only render the last N messages

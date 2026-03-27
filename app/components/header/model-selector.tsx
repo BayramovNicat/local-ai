@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useState, useEffect, useRef } from "react";
-import { Bot, ChevronDown, Search } from "lucide-react";
-import { Tooltip } from "../ui/tooltip";
+import { useState, useEffect, useRef } from 'react';
+import { Bot, ChevronDown, Search } from 'lucide-react';
+import { Tooltip } from '../ui/tooltip';
 
 export function ModelSelector({
   isOpen,
@@ -33,7 +33,7 @@ export function ModelSelector({
           <span className="truncate text-neutral-200">{selected}</span>
           <ChevronDown
             size={14}
-            className={`text-neutral-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
+            className={`text-neutral-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}
           />
         </button>
       </Tooltip>
@@ -64,7 +64,7 @@ function ModelDropdownContent({
   onSelect: (model: string) => void;
   onToggle: () => void;
 }) {
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
   const listRef = useRef<HTMLDivElement>(null);
 
@@ -72,21 +72,21 @@ function ModelDropdownContent({
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     switch (e.key) {
-      case "ArrowDown":
+      case 'ArrowDown':
         e.preventDefault();
         setActiveIndex((prev) => (prev + 1) % (filtered.length || 1));
         break;
-      case "ArrowUp":
+      case 'ArrowUp':
         e.preventDefault();
         setActiveIndex((prev) => (prev - 1 + filtered.length) % (filtered.length || 1));
         break;
-      case "Enter":
+      case 'Enter':
         e.preventDefault();
         if (filtered[activeIndex]) {
           onSelect(filtered[activeIndex]);
         }
         break;
-      case "Escape":
+      case 'Escape':
         e.preventDefault();
         onToggle();
         break;
@@ -98,7 +98,7 @@ function ModelDropdownContent({
     if (listRef.current) {
       const activeElement = listRef.current.children[activeIndex] as HTMLElement;
       if (activeElement) {
-        activeElement.scrollIntoView({ block: "nearest" });
+        activeElement.scrollIntoView({ block: 'nearest' });
       }
     }
   }, [activeIndex]);
@@ -141,14 +141,14 @@ function ModelDropdownContent({
               onClick={() => onSelect(model)}
               className={`group flex w-full cursor-pointer items-center justify-between rounded-lg px-3 py-2.5 text-left text-sm transition-all ${
                 index === activeIndex
-                  ? "bg-neutral-800 text-white"
+                  ? 'bg-neutral-800 text-white'
                   : model === selected
-                    ? "bg-neutral-900/50 text-neutral-200"
-                    : "text-neutral-400 hover:bg-neutral-900 hover:text-neutral-200"
+                    ? 'bg-neutral-900/50 text-neutral-200'
+                    : 'text-neutral-400 hover:bg-neutral-900 hover:text-neutral-200'
               }`}
               style={model === selected ? { borderLeft: `2px solid ${accent}` } : undefined}
             >
-              <span className={`truncate ${model === selected ? "font-medium text-white" : ""}`}>
+              <span className={`truncate ${model === selected ? 'font-medium text-white' : ''}`}>
                 {model}
               </span>
               {model === selected && (

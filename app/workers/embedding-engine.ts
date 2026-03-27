@@ -1,17 +1,17 @@
-import { WebWorkerMLCEngineHandler } from "@mlc-ai/web-llm";
+import { WebWorkerMLCEngineHandler } from '@mlc-ai/web-llm';
 import {
   loadAllEmbeddings,
   loadDocEmbeddingsByChatId,
   loadConvEmbeddingsExcludingChat,
   invalidateEmbeddingsCache,
-} from "../lib/db";
-import { searchEmbeddings, hybridScore } from "../lib/embeddings";
+} from '../lib/db';
+import { searchEmbeddings, hybridScore } from '../lib/embeddings';
 import {
   RAG_SCORE_THRESHOLD_DOCS,
   MAX_CONTEXT_CHARS,
   RAG_SCORE_THRESHOLD_CONV,
-} from "../data/constants";
-import type { ChatSession } from "../types";
+} from '../data/constants';
+import type { ChatSession } from '../types';
 
 const handler = new WebWorkerMLCEngineHandler();
 
@@ -19,24 +19,24 @@ self.onmessage = async (e: MessageEvent) => {
   const { type, payload } = e.data;
 
   // Intercept custom vector operations
-  if (type === "invalidate-cache") {
+  if (type === 'invalidate-cache') {
     invalidateEmbeddingsCache();
-    self.postMessage({ type: "invalidate-cache-results", id: e.data.id });
+    self.postMessage({ type: 'invalidate-cache-results', id: e.data.id });
     return;
   }
 
-  if (type === "custom-search") {
+  if (type === 'custom-search') {
     const { queryVector, historyMetadata, query, topK } = payload;
     try {
       const allEmbeddings = await loadAllEmbeddings();
       const results = searchEmbeddings(queryVector, allEmbeddings, historyMetadata, query, topK);
-      self.postMessage({ type: "custom-search-results", payload: results, id: e.data.id });
+      self.postMessage({ type: 'custom-search-results', payload: results, id: e.data.id });
     } catch (err) {
-      self.postMessage({ type: "custom-search-error", payload: String(err), id: e.data.id });
+      self.postMessage({ type: 'custom-search-error', payload: String(err), id: e.data.id });
     }
     return;
   }
-  if (type === "custom-rag-context") {
+  if (type === 'custom-rag-context') {
     const { query, queryVector, chatId, historyMetadata, maxContextChars } = payload;
     const limit = maxContextChars || MAX_CONTEXT_CHARS;
 
@@ -63,11 +63,11 @@ self.onmessage = async (e: MessageEvent) => {
         })
         .sort((a, b) => b.score - a.score);
 
-      let docContext = "";
+      let docContext = '';
       for (const chunk of scoredDocs) {
         if (chunk.score < RAG_SCORE_THRESHOLD_DOCS) break;
         if (docContext.length + chunk.text.length + 2 > limit) break;
-        docContext += chunk.text + "\n\n";
+        docContext += chunk.text + '\n\n';
       }
 
       // Conversation Context
@@ -76,13 +76,13 @@ self.onmessage = async (e: MessageEvent) => {
           const lowerText = rec.text.toLowerCase();
           return {
             text: rec.text,
-            chatTitle: historyMetadata[rec.chatId] || "Other Chat",
+            chatTitle: historyMetadata[rec.chatId] || 'Other Chat',
             score: hybridScore(queryTerms, lowerText, queryVector, rec.vector),
           };
         })
         .sort((a, b) => b.score - a.score);
 
-      let convContext = "";
+      let convContext = '';
       const MAX_CONV_CHARS = 1000;
       for (const chunk of scoredConvs) {
         if (chunk.score < RAG_SCORE_THRESHOLD_CONV) break;
@@ -92,12 +92,12 @@ self.onmessage = async (e: MessageEvent) => {
       }
 
       self.postMessage({
-        type: "custom-rag-context-results",
+        type: 'custom-rag-context-results',
         payload: { docContext: docContext.trim(), convContext: convContext.trim() },
         id: e.data.id,
       });
     } catch (err) {
-      self.postMessage({ type: "custom-rag-context-error", payload: String(err), id: e.data.id });
+      self.postMessage({ type: 'custom-rag-context-error', payload: String(err), id: e.data.id });
     }
     return;
   }

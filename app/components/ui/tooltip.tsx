@@ -1,19 +1,19 @@
-"use client";
+'use client';
 
-import { useState, useRef, useEffect, useCallback } from "react";
-import { createPortal } from "react-dom";
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 
 export function Tooltip({
   children,
   content,
   shortcut,
-  position = "top",
-  className = "flex w-full",
+  position = 'top',
+  className = 'flex w-full',
 }: {
   children: React.ReactNode;
   content: string;
   shortcut?: string;
-  position?: "top" | "bottom" | "left" | "right";
+  position?: 'top' | 'bottom' | 'left' | 'right';
   className?: string;
 }) {
   const [isVisible, setIsVisible] = useState(false);
@@ -34,16 +34,16 @@ export function Tooltip({
     let left = 0;
 
     // Initial position calculation
-    if (position === "top") {
+    if (position === 'top') {
       top = triggerRect.top - tooltipRect.height - gap;
       left = triggerRect.left + triggerRect.width / 2 - tooltipRect.width / 2;
-    } else if (position === "bottom") {
+    } else if (position === 'bottom') {
       top = triggerRect.bottom + gap;
       left = triggerRect.left + triggerRect.width / 2 - tooltipRect.width / 2;
-    } else if (position === "left") {
+    } else if (position === 'left') {
       top = triggerRect.top + triggerRect.height / 2 - tooltipRect.height / 2;
       left = triggerRect.left - tooltipRect.width - gap;
-    } else if (position === "right") {
+    } else if (position === 'right') {
       top = triggerRect.top + triggerRect.height / 2 - tooltipRect.height / 2;
       left = triggerRect.right + gap;
     }
@@ -62,7 +62,7 @@ export function Tooltip({
     // Vertical boundary handling
     if (top < padding) {
       // If "top" overflows, try "bottom"
-      if (position === "top") {
+      if (position === 'top') {
         const bottomAlt = triggerRect.bottom + gap;
         if (bottomAlt + tooltipRect.height < viewportHeight - padding) {
           top = bottomAlt;
@@ -74,7 +74,7 @@ export function Tooltip({
       }
     } else if (top + tooltipRect.height > viewportHeight - padding) {
       // If "bottom" overflows, try "top"
-      if (position === "bottom") {
+      if (position === 'bottom') {
         const topAlt = triggerRect.top - tooltipRect.height - gap;
         if (topAlt > padding) {
           top = topAlt;
@@ -99,12 +99,12 @@ export function Tooltip({
 
   useEffect(() => {
     if (isVisible) {
-      window.addEventListener("scroll", updatePosition, true);
-      window.addEventListener("resize", updatePosition);
+      window.addEventListener('scroll', updatePosition, true);
+      window.addEventListener('resize', updatePosition);
     }
     return () => {
-      window.removeEventListener("scroll", updatePosition, true);
-      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener('scroll', updatePosition, true);
+      window.removeEventListener('resize', updatePosition);
     };
   }, [isVisible, updatePosition]);
 
@@ -124,7 +124,7 @@ export function Tooltip({
     <div ref={triggerRef} className={className} onMouseEnter={show} onMouseLeave={hide}>
       {children}
       {isVisible &&
-        typeof document !== "undefined" &&
+        typeof document !== 'undefined' &&
         createPortal(
           <div
             ref={tooltipRef}
@@ -132,7 +132,7 @@ export function Tooltip({
             style={{
               top: coords.top,
               left: coords.left,
-              visibility: coords.top === -9999 ? "hidden" : "visible",
+              visibility: coords.top === -9999 ? 'hidden' : 'visible',
             }}
           >
             <div className="flex items-center gap-2.5 text-[11px] font-medium text-neutral-300">

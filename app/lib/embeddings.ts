@@ -1,4 +1,4 @@
-import type { EmbeddingRecord, SearchResult, ChatSession } from "@/app/types";
+import type { EmbeddingRecord, SearchResult, ChatSession } from '@/app/types';
 
 /**
  * Normalize a vector to unit length (L2 norm).
@@ -90,10 +90,10 @@ export function searchEmbeddings(
         text: rec.text,
         score,
         // We now expect the role to be in the record or default to user
-        role: (rec.documentId ? "document" : (rec.role ?? "user")) as
-          | "user"
-          | "assistant"
-          | "document",
+        role: (rec.documentId ? 'document' : (rec.role ?? 'user')) as
+          | 'user'
+          | 'assistant'
+          | 'document',
       };
     })
     .filter((r): r is SearchResult => r !== null);
@@ -131,8 +131,8 @@ export function chunkText(text: string, maxLength = 512, overlap = 64): string[]
 
     // If we're not at the very end, try to find a natural break point (space or newline)
     if (end < text.length) {
-      const lastSpace = text.lastIndexOf(" ", end);
-      const lastNewline = text.lastIndexOf("\n", end);
+      const lastSpace = text.lastIndexOf(' ', end);
+      const lastNewline = text.lastIndexOf('\n', end);
       const breakPoint = Math.max(lastSpace, lastNewline);
 
       // Only break if it's not too far back (don't lose more than 20% of the chunk)

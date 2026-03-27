@@ -1,8 +1,8 @@
-import { useRef } from "react";
-import { Plus } from "lucide-react";
-import { Tooltip } from "@/app/components/ui/tooltip";
-import { SidebarList } from "./sidebar-list";
-import type { ChatSession } from "@/app/types";
+import { useRef } from 'react';
+import { Plus } from 'lucide-react';
+import { Tooltip } from '@/app/components/ui/tooltip';
+import { SidebarList } from './sidebar-list';
+import type { ChatSession } from '@/app/types';
 
 export function Sidebar({
   isOpen,
@@ -29,9 +29,9 @@ export function Sidebar({
 
       <aside
         className={`${
-          isOpen ? "translate-x-0" : "-translate-x-full md:w-0 md:translate-x-0"
+          isOpen ? 'translate-x-0' : '-translate-x-full md:w-0 md:translate-x-0'
         } fixed z-30 flex h-full w-72 flex-col bg-[#0a0a0a] transition-all duration-300 md:relative md:z-auto ${
-          isOpen ? "overflow-hidden" : "md:w-0 md:overflow-hidden"
+          isOpen ? 'overflow-hidden' : 'md:w-0 md:overflow-hidden'
         }`}
       >
         <div className="p-4">
@@ -40,8 +40,8 @@ export function Sidebar({
               onClick={onNewChat}
               className="flex w-full cursor-pointer items-center justify-center gap-2 truncate rounded-xl border px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors"
               style={{
-                borderColor: "color-mix(in srgb, var(--accent) 30%, transparent)",
-                color: "var(--accent)",
+                borderColor: 'color-mix(in srgb, var(--accent) 30%, transparent)',
+                color: 'var(--accent)',
               }}
             >
               <Plus size={16} className="shrink-0" />

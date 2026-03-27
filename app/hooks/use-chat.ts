@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import {
   deleteChat as deleteChatFromDB,
@@ -7,11 +7,11 @@ import {
   isQuotaExceededError,
   revokeChatUrls,
   restoreChatFromSave,
-} from "@/app/lib/db";
-import type { Attachment, ChatSession, Message } from "@/app/types";
-import type { MLCEngineInterface } from "@mlc-ai/web-llm";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useToast } from "@/app/components/ui/toast";
+} from '@/app/lib/db';
+import type { Attachment, ChatSession, Message } from '@/app/types';
+import type { MLCEngineInterface } from '@mlc-ai/web-llm';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useToast } from '@/app/components/ui/toast';
 
 export function useChat(
   waitForEngine: () => Promise<MLCEngineInterface>,
@@ -23,7 +23,7 @@ export function useChat(
 ) {
   const { error: errorToast } = useToast();
   const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState("");
+  const [input, setInput] = useState('');
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [history, setHistory] = useState<ChatSession[]>([]);
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
@@ -51,19 +51,19 @@ export function useChat(
 
   // Tab Synchronization
   useEffect(() => {
-    const channel = new BroadcastChannel("local-ai-sync");
+    const channel = new BroadcastChannel('local-ai-sync');
 
     const handler = (event: MessageEvent) => {
       const { type, payload } = event.data;
 
-      if (type === "chat-update") {
+      if (type === 'chat-update') {
         const { chatId, messages: rawMessages, title } = payload;
 
         setHistory((prev) => {
           const oldSession = prev.find((s) => s.id === chatId);
           // Recreate ObjectURLs for attachments if they exist, but REUSE old ones if possible
           const restored = restoreChatFromSave(
-            { id: chatId, title: title || "", messages: rawMessages },
+            { id: chatId, title: title || '', messages: rawMessages },
             oldSession,
           );
           const messages = restored.messages;
@@ -78,14 +78,14 @@ export function useChat(
             }
             return newHistory;
           } else {
-            const newHistory = [{ id: chatId, title: title || "New Chat", messages }, ...prev];
+            const newHistory = [{ id: chatId, title: title || 'New Chat', messages }, ...prev];
             if (activeChatIdRef.current === chatId) {
               setMessages(messages);
             }
             return newHistory;
           }
         });
-      } else if (type === "chat-delete") {
+      } else if (type === 'chat-delete') {
         const { chatId } = payload;
         setHistory((prev) => prev.filter((s) => s.id !== chatId));
         if (activeChatIdRef.current === chatId) {
@@ -95,22 +95,22 @@ export function useChat(
       }
     };
 
-    channel.addEventListener("message", handler);
+    channel.addEventListener('message', handler);
     return () => {
-      channel.removeEventListener("message", handler);
+      channel.removeEventListener('message', handler);
       channel.close();
     };
   }, []);
 
   const broadcastUpdate = useCallback((chatId: string, messages: Message[], title?: string) => {
-    const channel = new BroadcastChannel("local-ai-sync");
-    channel.postMessage({ type: "chat-update", payload: { chatId, messages, title } });
+    const channel = new BroadcastChannel('local-ai-sync');
+    channel.postMessage({ type: 'chat-update', payload: { chatId, messages, title } });
     channel.close();
   }, []);
 
   const broadcastDelete = useCallback((chatId: string) => {
-    const channel = new BroadcastChannel("local-ai-sync");
-    channel.postMessage({ type: "chat-delete", payload: { chatId } });
+    const channel = new BroadcastChannel('local-ai-sync');
+    channel.postMessage({ type: 'chat-delete', payload: { chatId } });
     channel.close();
   }, []);
 
@@ -131,16 +131,16 @@ export function useChat(
       }, 500);
     };
 
-    container.addEventListener("scroll", handleScroll, { passive: true });
-    container.addEventListener("wheel", handleInteraction, { passive: true });
-    container.addEventListener("touchstart", handleInteraction, {
+    container.addEventListener('scroll', handleScroll, { passive: true });
+    container.addEventListener('wheel', handleInteraction, { passive: true });
+    container.addEventListener('touchstart', handleInteraction, {
       passive: true,
     });
 
     return () => {
-      container.removeEventListener("scroll", handleScroll);
-      container.removeEventListener("wheel", handleInteraction);
-      container.removeEventListener("touchstart", handleInteraction);
+      container.removeEventListener('scroll', handleScroll);
+      container.removeEventListener('wheel', handleInteraction);
+      container.removeEventListener('touchstart', handleInteraction);
       if (interactionTimerRef.current) clearTimeout(interactionTimerRef.current);
     };
   }, []);
@@ -159,7 +159,7 @@ export function useChat(
       setTimeout(() => {
         container.scrollTo({
           top: container.scrollHeight,
-          behavior: isChatSwitched ? ("instant" as ScrollBehavior) : "smooth",
+          behavior: isChatSwitched ? ('instant' as ScrollBehavior) : 'smooth',
         });
         if (isAtBottomRef.current || isChatSwitched || forceScrollRef.current)
           forceScrollRef.current = false;
@@ -189,9 +189,9 @@ export function useChat(
         }).catch((err) => {
           console.error(err);
           if (isQuotaExceededError(err)) {
-            errorToast("Storage quota exceeded. Please delete some chats.");
+            errorToast('Storage quota exceeded. Please delete some chats.');
           } else {
-            errorToast("Failed to save chat to database.");
+            errorToast('Failed to save chat to database.');
           }
         });
         broadcastUpdate(chatId, session.messages, session.title);
@@ -220,7 +220,7 @@ export function useChat(
       const id = crypto.randomUUID();
       const newSession: ChatSession = {
         id,
-        title: title ? (title.length > 20 ? title.slice(0, 20) + "..." : title) : "New Chat",
+        title: title ? (title.length > 20 ? title.slice(0, 20) + '...' : title) : 'New Chat',
         messages: [],
       };
       setHistory((prev) => [newSession, ...prev]);
@@ -228,9 +228,9 @@ export function useChat(
       await saveChatToDB(id, { title: newSession.title, messages: [] }).catch((err) => {
         console.error(err);
         if (isQuotaExceededError(err)) {
-          errorToast("Storage quota exceeded. Please delete some chats.");
+          errorToast('Storage quota exceeded. Please delete some chats.');
         } else {
-          errorToast("Failed to save new chat to database.");
+          errorToast('Failed to save new chat to database.');
         }
       });
       broadcastUpdate(id, [], newSession.title);
@@ -253,7 +253,7 @@ export function useChat(
 
     const userMsg: Message = {
       id: crypto.randomUUID(),
-      role: "user",
+      role: 'user',
       content: text,
       attachments: attachments.length > 0 ? [...attachments] : undefined,
     };
@@ -261,33 +261,33 @@ export function useChat(
     const assistantId = crypto.randomUUID();
     const assistantMsg: Message = {
       id: assistantId,
-      role: "assistant",
-      content: "",
+      role: 'assistant',
+      content: '',
     };
 
     setMessages((prev) => [...prev, userMsg, assistantMsg]);
-    setInput("");
+    setInput('');
     setAttachments([]);
     setIsStreaming(true);
 
     try {
       const engine = await waitForEngine();
-      let docContext = "",
-        convContext = "";
+      let docContext = '',
+        convContext = '';
       if (getContext && currentChatId) {
         const result = await getContext(text, currentChatId, historyRef.current);
         docContext = result.docContext;
         convContext = result.convContext;
       }
 
-      let systemPrompt = "";
+      let systemPrompt = '';
       if (docContext) systemPrompt += `### DOCUMENT CONTEXT\n${docContext}\n\n`;
       if (convContext) systemPrompt += `### PAST CONVERSATION MEMORIES\n${convContext}\n\n`;
 
       const engineMsgs = [];
       if (systemPrompt) {
         engineMsgs.push({
-          role: "system" as const,
+          role: 'system' as const,
           content: `Use this context for a better response:\n\n${systemPrompt.trim()}`,
         });
       }
@@ -318,12 +318,12 @@ export function useChat(
         stream: true,
       });
 
-      let currentText = "";
+      let currentText = '';
       let lastUpdateTime = Date.now();
       const UPDATE_INTERVAL = 50; // ms
 
       for await (const chunk of chunks) {
-        currentText += chunk.choices[0]?.delta.content || "";
+        currentText += chunk.choices[0]?.delta.content || '';
 
         const now = Date.now();
         if (now - lastUpdateTime > UPDATE_INTERVAL) {
@@ -346,18 +346,18 @@ export function useChat(
           const res = await engine.chat.completions.create({
             messages: [
               {
-                role: "user",
+                role: 'user',
                 content: `User: ${text}\nAssistant: ${currentText}\n\nGenerate a 2-5 word concise title for this chat. Output ONLY the title text.`,
               },
             ],
             stream: false,
           });
-          let title = res.choices[0]?.message.content?.trim() || "";
-          const generic = ["ai assistant", "helpful assistant", "untitled", "chat with ai"];
+          let title = res.choices[0]?.message.content?.trim() || '';
+          const generic = ['ai assistant', 'helpful assistant', 'untitled', 'chat with ai'];
           if (!title || generic.some((g) => title.toLowerCase().includes(g)) || title.length > 50) {
-            title = text.length > 25 ? text.slice(0, 25) + "..." : text;
+            title = text.length > 25 ? text.slice(0, 25) + '...' : text;
           }
-          updateHistory(currentChatId, finalMessages, title.replace(/^["']|["']$/g, ""));
+          updateHistory(currentChatId, finalMessages, title.replace(/^["']|["']$/g, ''));
         } catch (e) {
           console.error(e);
           updateHistory(currentChatId, finalMessages);
@@ -367,9 +367,9 @@ export function useChat(
       }
     } catch (err) {
       console.error(err);
-      errorToast("Failed to generate response. Please check WebGPU support.");
+      errorToast('Failed to generate response. Please check WebGPU support.');
       const errorMessages = messagesRef.current.map((m) =>
-        m.id === assistantId ? { ...m, content: "Error generating response." } : m,
+        m.id === assistantId ? { ...m, content: 'Error generating response.' } : m,
       );
       setMessages(errorMessages);
       if (currentChatId) {
@@ -416,7 +416,7 @@ export function useChat(
       setHistory((prev) => prev.filter((s) => s.id !== id));
       deleteChatFromDB(id).catch((err) => {
         console.error(err);
-        errorToast("Failed to delete chat from database.");
+        errorToast('Failed to delete chat from database.');
       });
       broadcastDelete(id);
       if (activeChatIdRef.current === id) {

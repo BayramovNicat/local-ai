@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useState, useCallback, createContext, useContext, ReactNode } from "react";
-import { X, AlertCircle, CheckCircle, Info } from "lucide-react";
+import { useState, useCallback, createContext, useContext, ReactNode } from 'react';
+import { X, AlertCircle, CheckCircle, Info } from 'lucide-react';
 
-type ToastType = "error" | "success" | "info";
+type ToastType = 'error' | 'success' | 'info';
 
 interface Toast {
   id: string;
@@ -27,7 +27,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const addToast = useCallback(
-    (message: string, type: ToastType = "info") => {
+    (message: string, type: ToastType = 'info') => {
       const id = Math.random().toString(36).substring(2, 9);
       setToasts((prev) => [...prev, { id, message, type }]);
       setTimeout(() => removeToast(id), 5000);
@@ -35,8 +35,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     [removeToast],
   );
 
-  const error = useCallback((msg: string) => addToast(msg, "error"), [addToast]);
-  const success = useCallback((msg: string) => addToast(msg, "success"), [addToast]);
+  const error = useCallback((msg: string) => addToast(msg, 'error'), [addToast]);
+  const success = useCallback((msg: string) => addToast(msg, 'success'), [addToast]);
 
   return (
     <ToastContext.Provider value={{ toast: addToast, error, success }}>
@@ -58,9 +58,9 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: string) =
   };
 
   const bgColors = {
-    error: "bg-red-950/20 border-red-500/30",
-    success: "bg-green-950/20 border-green-500/30",
-    info: "bg-blue-950/20 border-blue-500/30",
+    error: 'bg-red-950/20 border-red-500/30',
+    success: 'bg-green-950/20 border-green-500/30',
+    info: 'bg-blue-950/20 border-blue-500/30',
   };
 
   return (
@@ -82,7 +82,7 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: string) =
 export function useToast() {
   const context = useContext(ToastContext);
   if (!context) {
-    throw new Error("useToast must be used within a ToastProvider");
+    throw new Error('useToast must be used within a ToastProvider');
   }
   return context;
 }

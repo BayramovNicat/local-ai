@@ -1,6 +1,6 @@
 export interface Attachment {
   id: string;
-  type: "image";
+  type: 'image';
   url: string; // ObjectURL for rendering
   name: string;
   blob?: Blob; // For persistence in IDB
@@ -8,7 +8,7 @@ export interface Attachment {
 
 export interface Message {
   id: string;
-  role: "user" | "assistant";
+  role: 'user' | 'assistant';
   content: string;
   attachments?: Attachment[];
 }
@@ -29,7 +29,7 @@ export interface EmbeddingRecord {
   chatId: string;
   messageId: string;
   documentId?: string;
-  role?: "user" | "assistant" | "document";
+  role?: 'user' | 'assistant' | 'document';
   text: string;
   vector: number[];
   timestamp: number;
@@ -42,7 +42,7 @@ export interface SearchResult {
   documentId?: string;
   text: string;
   score: number;
-  role: "user" | "assistant" | "document";
+  role: 'user' | 'assistant' | 'document';
 }
 
 export interface Document {

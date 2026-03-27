@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { FileText, X, Loader2 } from "lucide-react";
-import type { Document } from "@/app/types";
+import { FileText, X, Loader2 } from 'lucide-react';
+import type { Document } from '@/app/types';
 
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;

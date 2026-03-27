@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { EMBEDDING_MODEL, EMBEDDING_BATCH_SIZE, MODEL_CONFIGS } from "@/app/data/constants";
+import { EMBEDDING_MODEL, EMBEDDING_BATCH_SIZE, MODEL_CONFIGS } from '@/app/data/constants';
 import {
   deleteDocument as deleteDocFromDB,
   deleteDocumentsByChatId,
@@ -8,13 +8,13 @@ import {
   getDocumentsByChatId,
   saveDocument,
   isQuotaExceededError,
-} from "@/app/lib/db";
-import { extractText } from "@/app/lib/documents";
-import { chunkText } from "@/app/lib/embeddings";
-import type { ChatSession, Document as DocType, EmbeddingRecord } from "@/app/types";
-import type { MLCEngineInterface } from "@mlc-ai/web-llm";
-import { useCallback, useState } from "react";
-import { useToast } from "@/app/components/ui/toast";
+} from '@/app/lib/db';
+import { extractText } from '@/app/lib/documents';
+import { chunkText } from '@/app/lib/embeddings';
+import type { ChatSession, Document as DocType, EmbeddingRecord } from '@/app/types';
+import type { MLCEngineInterface } from '@mlc-ai/web-llm';
+import { useCallback, useState } from 'react';
+import { useToast } from '@/app/components/ui/toast';
 
 export function useRag(
   getEmbeddingEngine: () => Promise<MLCEngineInterface>,
@@ -41,7 +41,7 @@ export function useRag(
       const docs = await getDocumentsByChatId(chatId);
       setDocuments(docs);
     } catch (err) {
-      console.error("[RAG] Failed to load documents:", err);
+      console.error('[RAG] Failed to load documents:', err);
       setDocuments([]);
     }
   }, []);
@@ -58,7 +58,7 @@ export function useRag(
         // Extract text
         const text = await extractText(file);
         if (!text.trim()) {
-          console.warn("[RAG] No text extracted from file:", file.name);
+          console.warn('[RAG] No text extracted from file:', file.name);
           return;
         }
 
@@ -66,7 +66,7 @@ export function useRag(
         const doc: DocType = {
           id: docId,
           name: file.name,
-          type: file.name.split(".").pop()?.toLowerCase() || "txt",
+          type: file.name.split('.').pop()?.toLowerCase() || 'txt',
           size: file.size,
           chatId,
           createdAt: Date.now(),
@@ -92,9 +92,9 @@ export function useRag(
             records.push({
               id: `${docId}_chunk${i + j}`,
               chatId,
-              messageId: "",
+              messageId: '',
               documentId: docId,
-              role: "document",
+              role: 'document',
               text: batch[j],
               vector: response.data[j].embedding,
               timestamp: Date.now(),
@@ -111,9 +111,9 @@ export function useRag(
           `[RAG] Indexed "${file.name}": ${chunks.length} chunks, ${records.length} embeddings`,
         );
       } catch (err) {
-        console.error("[RAG] Failed to upload document:", err);
+        console.error('[RAG] Failed to upload document:', err);
         if (isQuotaExceededError(err)) {
-          errorToast("Storage quota exceeded. Please delete some chats.");
+          errorToast('Storage quota exceeded. Please delete some chats.');
         } else {
           errorToast(`Failed to process document: ${file.name}`);
         }
@@ -133,7 +133,7 @@ export function useRag(
       chatId: string,
       history: ChatSession[],
     ): Promise<{ docContext: string; convContext: string }> => {
-      const empty = { docContext: "", convContext: "" };
+      const empty = { docContext: '', convContext: '' };
       try {
         // Skip if embedding engine isn't loaded yet — don't block the first message
         const engine = getEmbeddingEngineIfReady();
@@ -149,7 +149,7 @@ export function useRag(
 
         // Delegate context retrieval and scoring to worker with lightweight metadata
         const historyMetadata = Object.fromEntries(history.map((s) => [s.id, s.title]));
-        return (await callWorker("custom-rag-context", {
+        return (await callWorker('custom-rag-context', {
           query,
           queryVector,
           chatId,
@@ -157,9 +157,9 @@ export function useRag(
           maxContextChars: config.maxContextChars,
         })) as { docContext: string; convContext: string };
       } catch (err) {
-        console.error("[RAG] Failed to get context:", err);
-        errorToast("Failed to retrieve context from documents.");
-        return { docContext: "", convContext: "" };
+        console.error('[RAG] Failed to get context:', err);
+        errorToast('Failed to retrieve context from documents.');
+        return { docContext: '', convContext: '' };
       }
     },
     [getEmbeddingEngineIfReady, callWorker, errorToast, selectedModel],
@@ -175,8 +175,8 @@ export function useRag(
         await deleteDocFromDB(docId);
         setDocuments((prev) => prev.filter((d) => d.id !== docId));
       } catch (err) {
-        console.error("[RAG] Failed to remove document:", err);
-        errorToast("Failed to remove document.");
+        console.error('[RAG] Failed to remove document:', err);
+        errorToast('Failed to remove document.');
       }
     },
     [errorToast],
@@ -191,8 +191,8 @@ export function useRag(
         await deleteDocumentsByChatId(chatId);
         setDocuments([]);
       } catch (err) {
-        console.error("[RAG] Failed to cleanup documents:", err);
-        errorToast("Failed to cleanup documents.");
+        console.error('[RAG] Failed to cleanup documents:', err);
+        errorToast('Failed to cleanup documents.');
       }
     },
     [errorToast],

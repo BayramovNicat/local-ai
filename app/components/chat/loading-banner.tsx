@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { AlertCircle } from "lucide-react";
+import { AlertCircle } from 'lucide-react';
 
 export function LoadingBanner({
   modelName,
@@ -41,10 +41,10 @@ export function LoadingBanner({
           />
           <div className="min-w-0">
             <p className="truncate text-sm font-medium text-neutral-200">
-              {isCached ? "Loading" : "Downloading"} {modelName}
+              {isCached ? 'Loading' : 'Downloading'} {modelName}
             </p>
             <p className="truncate text-xs text-neutral-500">
-              {progressText || "Preparing model..."}
+              {progressText || 'Preparing model...'}
             </p>
           </div>
           <span className="ml-auto shrink-0 font-mono text-xs" style={{ color: accent }}>
